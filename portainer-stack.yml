@@ -1,0 +1,61 @@
+version: "3.8"
+
+# ==============================================================================
+# STACK OFICIAL PORTAINER - WOOHUB2 (CONTROL PLANE / BYO)
+# ------------------------------------------------------------------------------
+# - Protegida por Licença Criptográfica (Sem WOOHUB_LICENCA_CHAVE ativa, não sobe)
+# - Cada Revenda utiliza seu próprio Supabase (PostgreSQL) isolado
+# - Cada Revenda utiliza seu próprio MinIO / S3 isolado para Mídias (Áudio, Vídeo, PDF)
+# - Atualização Automática de Versão via Watchtower
+# ==============================================================================
+
+services:
+  woohub-api:
+    image: ghcr.io/fluowai/woohub34:${WOOHUB_VERSION:?Defina WOOHUB_VERSION com uma versão imutável}
+    container_name: woohub2_api_stack
+    restart: unless-stopped
+    ports:
+      - "${PORTA:-8080}:8080"
+    environment:
+      - AMBIENTE=production
+      - PORTA=8080
+      - FUSO_HORARIO=America/Sao_Paulo
+
+      # 1. LICENCIAMENTO OBRIGATÓRIO (KILL-SWITCH & TRAVA DE IP/INSTÂNCIAS)
+      - EXIGIR_LICENCA=true
+      - WOOHUB_LICENCA_CHAVE=${WOOHUB_LICENCA_CHAVE}
+      - WOOHUB_SERVIDOR_LICENCA=${WOOHUB_SERVIDOR_LICENCA:-https://licencas.woohub.com.br}
+      - WOOHUB_DOMINIO_OFICIAL=${WOOHUB_DOMINIO_OFICIAL:-woohub2.wootech.com.br}
+
+      # 2. SUPABASE ISOLADO DA REVENDA (Custo Zero de Banco para a Matriz)
+      # Nota: Use a URI do Pooler na porta 5432 (Session Mode)
+      - TIPO_BANCO=postgres
+      - URI_BANCO=${URI_BANCO}
+
+      # 3. MINIO / S3 ISOLADO DA REVENDA (Custo Zero de Storage de Mídia para a Matriz)
+      - STORAGE_DRIVER=s3
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_BUCKET=${MINIO_BUCKET:-woohub-midias}
+      - MINIO_REGIAO=${MINIO_REGIAO:-us-east-1}
+      - MINIO_USE_SSL=${MINIO_USE_SSL:-true}
+      - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-}
+
+      # 4. CREDENCIAIS DO ADMINISTRADOR DA REVENDA
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@suarevenda.com.br}
+      - ADMIN_SENHA=${ADMIN_SENHA:?Defina ADMIN_SENHA forte}
+      - SEGREDO_JWT=${SEGREDO_JWT:?Defina SEGREDO_JWT com pelo menos 32 caracteres}
+      - CHAVE_MESTRE=${CHAVE_MESTRE:?Defina CHAVE_MESTRE com pelo menos 32 caracteres}
+      - CORS_ORIGENS=${CORS_ORIGENS:?Defina CORS_ORIGENS explicitamente}
+      - SEED_DADOS_DEMO=false
+
+  # 5. ATUALIZADOR AUTOMÁTICO DE CONTAINERS LICENCIADOS
+  watchtower:
+    image: containrrr/watchtower:1.7.1
+    container_name: woohub_auto_updater
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 3600 --cleanup woohub2_api_stack
+

@@ -1,0 +1,2108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WooHub API - Plataforma de WhatsApp & White-Label</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=20261104v31">
+  <link rel="icon" type="image/svg+xml" id="fav-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%23059669'/%3E%3Ctext x='50%25' y='68%25' font-size='60' font-weight='800' fill='white' text-anchor='middle'%3EW%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+
+  <!-- ====================================================================
+       1. TELA DE LOGIN & AUTENTICAÇÃO (DESIGN MODERNO GLASSMORPHISM)
+       ==================================================================== -->
+  <div id="tela-login" class="login-wrapper">
+    <div class="login-fundo-decoracao"></div>
+    <div class="login-card">
+      <div class="login-topo">
+        <div class="marca-icone login-logo-icone" id="login-marca-logo">W</div>
+        <h2 id="login-marca-nome" class="login-titulo">WooHub API</h2>
+        <p class="login-subtitulo">Plataforma B2B White-Label & Gateway Multidevice</p>
+      </div>
+
+      <div id="login-alerta" class="alerta-erro" style="display: none;"></div>
+
+      <form id="form-login" onsubmit="fazerLogin(event)">
+        <div class="form-grupo">
+          <label class="form-label" for="login-email">E-mail de Acesso</label>
+          <div class="input-com-icone">
+            <span class="icone-input">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            </span>
+            <input type="email" id="login-email" class="form-input" placeholder="admin@woohub.com.br" required autofocus autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-grupo">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <label class="form-label" for="login-senha" style="margin-bottom: 0;">Senha</label>
+          </div>
+          <div class="input-com-icone">
+            <span class="icone-input">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <input type="password" id="login-senha" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+            <button type="button" class="btn-toggle-senha" onclick="alternarVisibilidadeSenha()" title="Mostrar/Ocultar Senha">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 1.25rem 0 1.5rem 0; font-size: 0.85rem; color: #94a3b8;">
+          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="login-lembrar" checked style="accent-color: #059669;">
+            <span>Lembrar meu acesso</span>
+          </label>
+        </div>
+
+        <button type="submit" id="btn-submit-login" class="btn btn-login-submit">
+          <span id="btn-login-texto">Entrar no Painel</span>
+          <span id="btn-login-spinner" class="spinner" style="display: none;"></span>
+        </button>
+      </form>
+
+      <div class="login-dica-box">
+        <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #34d399; margin-bottom: 0.25rem;">
+          Ambiente Seguro &bull; Criptografia Ponta a Ponta
+        </div>
+        <div style="font-size: 0.82rem; color: #cbd5e1;">
+          Utilize as credenciais corporativas fornecidas pelo administrador da plataforma.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       2. PAINEL PRINCIPAL (LAYOUT SAAS: SIDEBAR VERDE ESCURO + CONTEÚDO LIGHT)
+       ==================================================================== -->
+  <div id="painel-principal" class="app-layout" style="display: none;">
+
+    <!-- BARRA LATERAL (SIDEBAR DEEP FOREST GREEN) -->
+    <aside class="sidebar" id="sidebar">
+      
+      <!-- Topo: Marca e Identidade -->
+      <div class="sidebar-marca">
+        <div class="logo-box" id="sidebar-logo-box">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4l4 16 4-12 4 12 4-16"/>
+          </svg>
+        </div>
+        <div class="marca-info">
+          <h1 class="marca-nome" id="marca-nome">WooHub API</h1>
+        </div>
+      </div>
+
+      <!-- Badge de Perfil / Nível de Acesso Estrito da Conta Autenticada -->
+      <div class="role-selector-card" id="role-selector-box" style="cursor: default;" title="Nível de acesso da sua conta" onclick="alternarSeletorPerfil(event)">
+        <div class="role-badge-left">
+          <span class="role-icone" id="role-icone-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </span>
+          <div class="role-textos">
+            <span class="role-titulo" id="role-titulo-display">MEGA ADMIN</span>
+            <span class="role-subtitulo" id="role-subtitulo-display">Dono da Plataforma</span>
+          </div>
+        </div>
+        <span class="role-chevron" id="role-chevron-badge" style="display: none;">●</span>
+      </div>
+
+      <div class="dropdown-perfis" id="dropdown-perfis" style="display: none;">
+        <div class="dropdown-item" onclick="selecionarVisaoTier('admin'); fecharSeletorPerfil();">
+          <span class="drop-ico">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </span>
+          <div><strong>01 / Mega Admin</strong><small>Controle global da plataforma</small></div>
+        </div>
+        <div class="dropdown-item" onclick="selecionarVisaoTier('revendedor')">
+          <span class="drop-ico">
+            <svg viewBox="0 0 24 24"><path d="M3 21h18M3 7v14M21 7v14M6 21V11M10 21V11M14 21V11M18 21V11M12 3l9 4H3l9-4z"/></svg>
+          </span>
+          <div>
+            <strong>02 / Revendedor</strong>
+            <small>Agência Vértice (White-label)</small>
+          </div>
+        </div>
+        <div class="dropdown-item" onclick="selecionarVisaoTier('cliente')">
+          <span class="drop-ico">
+            <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          </span>
+          <div>
+            <strong>03 / Cliente Final</strong>
+            <small>Clínica Essência (Conexões)</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Menu de Navegação da Sidebar -->
+      <nav class="sidebar-nav" id="sidebar-nav">
+        
+        <!-- Bloco Principal -->
+        <div class="nav-secao-titulo">PRINCIPAL</div>
+        <a class="nav-item ativo" data-nav="visao-geral" onclick="navegarPara('visao-geral')">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </span>
+          <span class="nav-label">Visão geral</span>
+        </a>
+        <a class="nav-item" id="nav-revendedores" data-nav="revendedores" onclick="navegarPara('revendedores')">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
+          <span class="nav-label" id="label-nav-revendedores">Revendedores</span>
+        </a>
+        <a class="nav-item" id="nav-clientes" data-nav="clientes" onclick="navegarPara('clientes')">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </span>
+          <span class="nav-label" id="label-nav-clientes">Clientes</span>
+        </a>
+        <a class="nav-item" data-nav="instancias" onclick="navegarPara('instancias')">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </span>
+          <span class="nav-label">Instâncias WhatsApp</span>
+        </a>
+        <a class="nav-item" data-nav="testador" onclick="navegarPara('testador')">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </span>
+          <span class="nav-label">Testar envio</span>
+        </a>
+
+        <!-- Bloco Negócio / White-Label -->
+        <div class="nav-secao-titulo" id="secao-negocio-titulo">NEGÓCIO</div>
+        <a class="nav-item" data-nav="planos" onclick="navegarPara('planos')">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </span>
+          <span class="nav-label">Planos e assinaturas</span>
+        </a>
+        <a class="nav-item" data-nav="financeiro" onclick="navegarPara('financeiro')">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </span>
+          <span class="nav-label">Financeiro</span>
+        </a>
+        <a class="nav-item" data-nav="whitelabel" onclick="navegarPara('whitelabel')">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          </span>
+          <span class="nav-label">Marca e white-label</span>
+        </a>
+        <a class="nav-item" id="nav-email-resend" data-nav="email-resend" onclick="navegarPara('email-resend')">
+          <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+          <span class="nav-label">E-mails e Resend</span>
+        </a>
+
+        <!-- Bloco Plataforma & Integrações -->
+        <div class="nav-secao-titulo">INTEGRAÇÕES & SISTEMA</div>
+        <a class="nav-item" id="nav-integracoes" data-nav="integracoes" onclick="navegarPara('integracoes')">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </span>
+          <span class="nav-label">Caixas & Integrações</span>
+        </a>
+        <a class="nav-item" data-nav="webhooks" onclick="navegarPara('webhooks')">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </span>
+          <span class="nav-label">Webhooks</span>
+        </a>
+        <a class="nav-item" data-nav="logs" onclick="navegarPara('logs')">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </span>
+          <span class="nav-label">Auditoria e logs</span>
+        </a>
+        <a class="nav-item" data-nav="docs" onclick="navegarPara('docs')">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </span>
+          <span class="nav-label">Documentação API</span>
+        </a>
+      </nav>
+
+      <!-- Rodapé da Sidebar: Suporte & Usuário -->
+      <div class="sidebar-rodape">
+        <a class="nav-item nav-suporte" onclick="abrirSuporte()">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+          </span>
+          <span class="nav-label">Suporte</span>
+        </a>
+
+        <div class="usuario-card-footer" onclick="abrirModalAlterarSenha()" title="Clique para gerenciar perfil e senha">
+          <div class="user-avatar-circulo" id="usuario-avatar-circulo">P</div>
+          <div class="user-info-textos">
+            <span class="user-nome" id="sidebar-usuario-nome">Paulo</span>
+            <span class="user-cargo" id="sidebar-usuario-cargo">Dono da plataforma</span>
+          </div>
+          <span class="user-seta">›</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ÁREA DE CONTEÚDO PRINCIPAL (LIGHT SAAS DASHBOARD) -->
+    <div class="main-content-wrapper">
+
+      <!-- TOP BAR SUPERIOR -->
+      <header class="topbar">
+        <div class="topbar-esquerda">
+          <!-- Botão Mobile Toggle -->
+          <button class="btn-toggle-sidebar" onclick="alternarSidebarMobile()">☰</button>
+
+          <!-- Breadcrumb Inteligente -->
+          <div class="breadcrumb" id="topbar-breadcrumb">
+            <span class="breadcrumb-home">
+              <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </span>
+            <span class="breadcrumb-item" id="breadcrumb-raiz">Início</span>
+            <span class="breadcrumb-sep">&gt;</span>
+            <span class="breadcrumb-atual" id="breadcrumb-pagina">Visão geral</span>
+          </div>
+        </div>
+
+        <div class="topbar-direita">
+          <!-- Campo de Busca Global -->
+          <div class="busca-global-box">
+            <span class="busca-ico">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
+            <input type="text" class="busca-input" id="busca-global-input" placeholder="Buscar revendedores, clientes, instâncias...">
+          </div>
+
+          <!-- Indicador Exclusivo do Nível Autenticado (Sem exposição de outros níveis) -->
+          <div class="switcher-telas-pills" id="topbar-tier-badge-wrap" title="Nível de acesso da sua conta">
+            <span class="pill-tela ativo" id="badge-nivel-topo" style="cursor: default;">Mega Admin</span>
+          </div>
+
+          <!-- Notificação com Ponto Vermelho -->
+          <div class="btn-notificacao" title="Notificações do Sistema">
+            <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="bolinha-alerta"></span>
+          </div>
+
+          <!-- Avatar Usuário + Botão Sair -->
+          <div class="topbar-user-box">
+            <div class="avatar-topbar" id="avatar-topbar-txt">P</div>
+            <button class="btn-topbar-logout" onclick="fazerLogout()" title="Encerrar Sessão">
+              <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Sair
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- CORPO DAS PÁGINAS -->
+      <main class="page-body">
+
+        <!-- ================================================================
+             TELA 01: MEGA ADMIN - VISÃO GERAL DA PLATAFORMA (IMAGE 1)
+             ================================================================ -->
+        <div id="visao-mega-admin" class="visao-bloco">
+          
+          <!-- Cabeçalho da Visão -->
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Visão geral da plataforma</h2>
+              <p class="page-subtitle">Controle completo da sua operação</p>
+            </div>
+            <button class="btn btn-verde" onclick="abrirModalNovoRevendedor()">
+              <span>+</span> Novo revendedor
+            </button>
+          </div>
+
+          <!-- Grid com os 4 Cartões de Métricas -->
+          <div class="metricas-quad-grid">
+            <div class="card-metrica">
+              <div class="metrica-topo">
+                <div class="metrica-ico-circle verde-claro">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+              </div>
+              <div class="metrica-rotulo">Receita recorrente</div>
+              <div class="metrica-numero">R$ 48.590</div>
+              <div class="metrica-variacao positiva">
+                <span class="seta-trend">↗</span> + 12,5% <span class="variacao-sub">em relação ao mês anterior</span>
+              </div>
+            </div>
+
+            <div class="card-metrica">
+              <div class="metrica-topo">
+                <div class="metrica-ico-circle verde-claro">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+              </div>
+              <div class="metrica-rotulo">Revendedores ativos</div>
+              <div class="metrica-numero">32</div>
+              <div class="metrica-variacao positiva">
+                <span class="seta-trend">↗</span> + 6,7% <span class="variacao-sub">em relação ao mês anterior</span>
+              </div>
+            </div>
+
+            <div class="card-metrica">
+              <div class="metrica-topo">
+                <div class="metrica-ico-circle verde-claro">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                </div>
+              </div>
+              <div class="metrica-rotulo">Instâncias conectadas</div>
+              <div class="metrica-numero" id="admin-total-instancias">1.284</div>
+              <div class="metrica-variacao positiva">
+                <span class="seta-trend">↗</span> + 11,2% <span class="variacao-sub">em relação ao mês anterior</span>
+              </div>
+            </div>
+
+            <div class="card-metrica">
+              <div class="metrica-topo">
+                <div class="metrica-ico-circle verde-claro">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+              </div>
+              <div class="metrica-rotulo">Clientes ativos</div>
+              <div class="metrica-numero">846</div>
+              <div class="metrica-variacao positiva">
+                <span class="seta-trend">↗</span> + 9,1% <span class="variacao-sub">em relação ao mês anterior</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Linha Central: Gráfico de Evolução + Saúde da Infraestrutura -->
+          <div class="grid-dois-paineis">
+            
+            <!-- Painel Esquerdo: Evolução da Receita (Gráfico SVG de Área) -->
+            <div class="card-dashboard card-grafico-receita">
+              <div class="card-dashboard-header">
+                <h3 class="card-dashboard-titulo">Evolução da receita</h3>
+                <div class="select-periodo-wrap">
+                  <select class="select-periodo">
+                    <option>Últimos 12 meses</option>
+                    <option>Últimos 6 meses</option>
+                    <option>Ano Atual (2025)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Gráfico Vetorial SVG Responsivo com Curva e Tooltip -->
+              <div class="grafico-container">
+                <div class="tooltip-grafico" style="left: 92%; top: 12%;">
+                  <span>R$ 48.590</span>
+                </div>
+                <svg viewBox="0 0 700 240" class="svg-grafico" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="grad-verde-admin" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#10b981" stop-opacity="0.32"/>
+                      <stop offset="100%" stop-color="#10b981" stop-opacity="0.01"/>
+                    </linearGradient>
+                  </defs>
+                  <!-- Linhas Horizontais de Grade -->
+                  <line x1="40" y1="30" x2="680" y2="30" stroke="#f1f5f9" stroke-width="1"/>
+                  <line x1="40" y1="80" x2="680" y2="80" stroke="#f1f5f9" stroke-width="1"/>
+                  <line x1="40" y1="130" x2="680" y2="130" stroke="#f1f5f9" stroke-width="1"/>
+                  <line x1="40" y1="180" x2="680" y2="180" stroke="#f1f5f9" stroke-width="1"/>
+                  
+                  <!-- Eixo Y Textos -->
+                  <text x="5" y="35" class="svg-texto-eixo">60.000</text>
+                  <text x="5" y="85" class="svg-texto-eixo">45.000</text>
+                  <text x="5" y="135" class="svg-texto-eixo">30.000</text>
+                  <text x="5" y="185" class="svg-texto-eixo">15.000</text>
+                  <text x="25" y="225" class="svg-texto-eixo">0</text>
+
+                  <!-- Área preenchida -->
+                  <path d="M 50 200 L 95 185 L 145 180 L 195 165 L 245 175 L 295 165 L 345 155 L 395 130 L 445 110 L 495 125 L 545 95 L 595 80 L 645 55 L 645 220 L 50 220 Z" fill="url(#grad-verde-admin)" />
+
+                  <!-- Linha principal -->
+                  <path d="M 50 200 L 95 185 L 145 180 L 195 165 L 245 175 L 295 165 L 345 155 L 395 130 L 445 110 L 495 125 L 545 95 L 595 80 L 645 55" fill="none" stroke="#059669" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+
+                  <!-- Pontos de dados -->
+                  <circle cx="50" cy="200" r="3.5" fill="#059669"/>
+                  <circle cx="95" cy="185" r="3.5" fill="#059669"/>
+                  <circle cx="145" cy="180" r="3.5" fill="#059669"/>
+                  <circle cx="195" cy="165" r="3.5" fill="#059669"/>
+                  <circle cx="245" cy="175" r="3.5" fill="#059669"/>
+                  <circle cx="295" cy="165" r="3.5" fill="#059669"/>
+                  <circle cx="345" cy="155" r="3.5" fill="#059669"/>
+                  <circle cx="395" cy="130" r="3.5" fill="#059669"/>
+                  <circle cx="445" cy="110" r="3.5" fill="#059669"/>
+                  <circle cx="495" cy="125" r="3.5" fill="#059669"/>
+                  <circle cx="545" cy="95" r="3.5" fill="#059669"/>
+                  <circle cx="595" cy="80" r="3.5" fill="#059669"/>
+                  <circle cx="645" cy="55" r="5" fill="#059669" stroke="#ffffff" stroke-width="2"/>
+                </svg>
+
+                <!-- Legenda Meses -->
+                <div class="eixo-x-meses">
+                  <span>Jan</span><span>Fev</span><span>Mar</span><span>Abr</span><span>Mai</span><span>Jun</span>
+                  <span>Jul</span><span>Ago</span><span>Set</span><span>Out</span><span>Nov</span><span>Dez</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Painel Direito: Saúde da Infraestrutura (Gauge + Serviços) -->
+            <div class="card-dashboard card-saude-infra">
+              <div class="card-dashboard-header">
+                <h3 class="card-dashboard-titulo">Saúde da infraestrutura</h3>
+                <span class="seta-link">›</span>
+              </div>
+
+              <!-- Gauge Semicírculo 99.98% -->
+              <div class="gauge-container">
+                <svg viewBox="0 0 160 85" class="svg-gauge">
+                  <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#e2e8f0" stroke-width="12" stroke-linecap="round"/>
+                  <path d="M 20 80 A 60 60 0 0 1 138 78" fill="none" stroke="#059669" stroke-width="12" stroke-linecap="round"/>
+                </svg>
+                <div class="gauge-conteudo">
+                  <div class="gauge-sub">Disponibilidade</div>
+                  <div class="gauge-valor">99,98%</div>
+                  <div class="gauge-periodo">Últimos 30 dias</div>
+                </div>
+              </div>
+
+              <!-- Lista de Serviços e Status Online -->
+              <div class="lista-servicos-saude">
+                <div class="item-servico">
+                  <span class="servico-nome"><span class="dot-servico online"></span> API Principal</span>
+                  <span class="badge-status-micro online">● Online</span>
+                </div>
+                <div class="item-servico">
+                  <span class="servico-nome"><span class="dot-servico online"></span> Banco de dados</span>
+                  <span class="badge-status-micro online">● Online</span>
+                </div>
+                <div class="item-servico">
+                  <span class="servico-nome"><span class="dot-servico online"></span> Fila de mensagens</span>
+                  <span class="badge-status-micro online">● Online</span>
+                </div>
+                <div class="item-servico">
+                  <span class="servico-nome"><span class="dot-servico online"></span> Serviços de mídia</span>
+                  <span class="badge-status-micro online">● Online</span>
+                </div>
+                <div class="item-servico">
+                  <span class="servico-nome"><span class="dot-servico online"></span> Painel e aplicativos</span>
+                  <span class="badge-status-micro online">● Online</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabela Inferior: Revendedores -->
+          <div class="card-dashboard tabela-card">
+            <div class="card-dashboard-header">
+              <h3 class="card-dashboard-titulo">Revendedores</h3>
+              <a class="link-ver-todos" onclick="navegarPara('revendedores')">Ver todos ›</a>
+            </div>
+
+            <div class="tabela-responsiva">
+              <table class="tabela-padrao">
+                <thead>
+                  <tr>
+                    <th>Empresa ▾</th>
+                    <th>Plano ▾</th>
+                    <th>Instâncias ▾</th>
+                    <th>Status ▾</th>
+                    <th>Receita (mensal) ▾</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-revendedores-admin-corpo">
+                  <tr>
+                    <td>
+                      <div class="item-empresa">
+                        <div class="empresa-avatar">CN</div>
+                        <div>
+                          <strong>ConectaZap Digital</strong>
+                          <small>conectazap.com.br</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge-plano azul">Profissional</span></td>
+                    <td><strong>320</strong></td>
+                    <td><span class="badge-status-pill online">● Ativo</span></td>
+                    <td><strong>R$ 12.480</strong></td>
+                    <td><button class="btn-opcoes">⋮</button></td>
+                  </tr>
+
+                  <tr>
+                    <td>
+                      <div class="item-empresa">
+                        <div class="empresa-avatar">MS</div>
+                        <div>
+                          <strong>MensagemCerta</strong>
+                          <small>mensagemcerta.io</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge-plano roxo">Avançado</span></td>
+                    <td><strong>186</strong></td>
+                    <td><span class="badge-status-pill online">● Ativo</span></td>
+                    <td><strong>R$ 7.950</strong></td>
+                    <td><button class="btn-opcoes">⋮</button></td>
+                  </tr>
+
+                  <tr>
+                    <td>
+                      <div class="item-empresa">
+                        <div class="empresa-avatar">DT</div>
+                        <div>
+                          <strong>DigitalTalks</strong>
+                          <small>digitaltalks.com.br</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge-plano azul">Profissional</span></td>
+                    <td><strong>412</strong></td>
+                    <td><span class="badge-status-pill online">● Ativo</span></td>
+                    <td><strong>R$ 15.200</strong></td>
+                    <td><button class="btn-opcoes">⋮</button></td>
+                  </tr>
+
+                  <tr>
+                    <td>
+                      <div class="item-empresa">
+                        <div class="empresa-avatar">SB</div>
+                        <div>
+                          <strong>ZapBusiness</strong>
+                          <small>zapbusiness.com.br</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge-plano cinza">Básico</span></td>
+                    <td><strong>98</strong></td>
+                    <td><span class="badge-status-pill online">● Ativo</span></td>
+                    <td><strong>R$ 2.960</strong></td>
+                    <td><button class="btn-opcoes">⋮</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Central de Licenças Criptográficas & Stacks Portainer (Kill-Switch) -->
+          <div class="card-dashboard tabela-card" style="margin-top: 1.5rem;">
+            <div class="card-dashboard-header">
+              <div>
+                <h3 class="card-dashboard-titulo">Licenciamento de Stacks Portainer &amp; Kill-Switch Remoto</h3>
+                <p style="color: #64748b; font-size: 0.85rem; margin-top: 0.25rem;">Controle os containers distribuídos: sem licença ativa o container não sobe no Portainer e cada revenda usa seu próprio Supabase + MinIO.</p>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-outline" onclick="carregarLicencasAdmin()">Atualizar</button>
+                <button class="btn btn-verde" onclick="abrirModalNovaLicenca()">+ Emitir Licença Portainer</button>
+              </div>
+            </div>
+
+            <div class="tabela-responsiva">
+              <table class="tabela-padrao">
+                <thead>
+                  <tr>
+                    <th>Cliente / Revenda</th>
+                    <th>Chave de Licença</th>
+                    <th>Plano &amp; Limite</th>
+                    <th>Domínio / IP Vinculado</th>
+                    <th>Último Heartbeat</th>
+                    <th>Status</th>
+                    <th>Ações (Kill-Switch)</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-licencas-admin-corpo">
+                  <tr>
+                    <td colspan="7" style="text-align: center; padding: 1.5rem; color: #64748b;">Carregando licenças emitidas...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ================================================================
+             TELA 02: REVENDEDOR - SEU NEGÓCIO CONECTADO (IMAGE 2)
+             ================================================================ -->
+        <div id="visao-revendedor" class="visao-bloco" style="display: none;">
+          
+          <!-- Cabeçalho Revendedor -->
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Seu negócio conectado</h2>
+              <p class="page-subtitle">Gerencie seus clientes, sua marca e suas conexões</p>
+            </div>
+            <button class="btn btn-verde" onclick="abrirModalNovoCliente()">
+              <span>+</span> Novo cliente
+            </button>
+          </div>
+
+          <!-- 4 Métricas do Revendedor -->
+          <div class="metricas-quad-grid">
+            <div class="card-metrica">
+              <div class="metrica-topo">
+                <div class="metrica-ico-circle verde-claro">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </div>
+              </div>
+              <div class="metrica-rotulo">Receita mensal</div>
+              <div class="metrica-numero" id="rev-receita-mensal">R$ 12.870</div>
+              <div class="metrica-variacao positiva">
+                <span class="seta-trend">↑</span> 12% <span class="variacao-sub">em relação ao mês anterior</span>
+              </div>
+            </div>
+
+            <div class="card-metrica">
+              <div class="metrica-topo">
+                <div class="metrica-ico-circle verde-claro">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+              </div>
+              <div class="metrica-rotulo">Clientes ativos</div>
+              <div class="metrica-numero" id="rev-clientes-ativos">4</div>
+              <div class="metrica-variacao positiva">
+                <span class="seta-trend">↑</span> 9% <span class="variacao-sub">em relação ao mês anterior</span>
+              </div>
+            </div>
+
+            <div class="card-metrica">
+              <div class="metrica-topo">
+                <div class="metrica-ico-circle verde-claro">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                </div>
+              </div>
+              <div class="metrica-rotulo">Instâncias em uso</div>
+              <div class="metrica-numero" id="rev-instancias-uso">5 <span style="font-size: 1rem; color: #64748b; font-weight: normal;">de 150</span></div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="rev-instancias-progress-fill" style="width: 15%;"></div>
+                <span class="progress-text" id="rev-instancias-progress-text">15%</span>
+              </div>
+            </div>
+
+            <div class="card-metrica">
+              <div class="metrica-topo">
+                <div class="metrica-ico-circle verde-claro">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+                </div>
+              </div>
+              <div class="metrica-rotulo">Margem estimada</div>
+              <div class="metrica-numero" id="rev-margem-estimada">65%</div>
+              <div class="metrica-variacao positiva">
+                <span class="seta-trend">↑</span> 5% <span class="variacao-sub">em relação ao mês anterior</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Linha Central: Gráfico de Barras + Cartão Minha Marca -->
+          <div class="grid-dois-paineis">
+            
+            <!-- Gráfico de Barras: Receita dos Clientes -->
+            <div class="card-dashboard card-grafico-barras">
+              <div class="card-dashboard-header">
+                <h3 class="card-dashboard-titulo">Receita dos clientes</h3>
+                <div class="select-periodo-wrap">
+                  <select class="select-periodo" id="select-periodo-revenda" onchange="alternarPeriodoReceitaRevenda(this.value)">
+                    <option value="6">Últimos 6 meses</option>
+                    <option value="12">Últimos 12 meses</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Barras Verticais em SVG -->
+              <div class="grafico-container" id="container-grafico-revenda">
+                <svg viewBox="0 0 600 220" class="svg-grafico">
+                  <!-- Grade -->
+                  <line x1="40" y1="30" x2="580" y2="30" stroke="#f1f5f9" stroke-width="1"/>
+                  <line x1="40" y1="80" x2="580" y2="80" stroke="#f1f5f9" stroke-width="1"/>
+                  <line x1="40" y1="130" x2="580" y2="130" stroke="#f1f5f9" stroke-width="1"/>
+                  <line x1="40" y1="180" x2="580" y2="180" stroke="#f1f5f9" stroke-width="1"/>
+                  
+                  <text x="5" y="35" class="svg-texto-eixo">R$ 20.000</text>
+                  <text x="5" y="85" class="svg-texto-eixo">R$ 15.000</text>
+                  <text x="5" y="135" class="svg-texto-eixo">R$ 10.000</text>
+                  <text x="5" y="185" class="svg-texto-eixo">R$ 5.000</text>
+                  <text x="25" y="210" class="svg-texto-eixo">R$ 0</text>
+
+                  <!-- Barras Verdes -->
+                  <rect x="75" y="135" width="46" height="65" rx="4" fill="#059669" />
+                  <rect x="160" y="110" width="46" height="90" rx="4" fill="#059669" />
+                  <rect x="245" y="105" width="46" height="95" rx="4" fill="#059669" />
+                  <rect x="330" y="90" width="46" height="110" rx="4" fill="#059669" />
+                  <rect x="415" y="70" width="46" height="130" rx="4" fill="#059669" />
+                  <rect x="500" y="55" width="46" height="145" rx="4" fill="#059669" />
+                </svg>
+
+                <div class="eixo-x-meses" style="padding-left: 40px;">
+                  <span>Jan/2025</span><span>Fev/2025</span><span>Mar/2025</span>
+                  <span>Abr/2025</span><span>Mai/2025</span><span>Jun/2025</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cartão Minha Marca (White-Label Próprio) -->
+            <div class="card-dashboard card-minha-marca-widget">
+              <div class="card-dashboard-header">
+                <h3 class="card-dashboard-titulo">Minha marca</h3>
+              </div>
+              <p class="card-desc-pequena">Personalize a experiência dos seus clientes com a sua marca e domínio próprio.</p>
+
+              <div class="widget-marca-preview">
+                <div class="marca-box-preview" id="marca-box-grande">
+                  <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4l4 16 4-12 4 12 4-16"/>
+                  </svg>
+                </div>
+
+                <div class="campos-marca-mini">
+                  <div class="form-grupo-mini">
+                    <label>Cor principal</label>
+                    <div class="cor-input-inline">
+                      <span class="cor-amostra" id="cor-amostra-box" style="background: #10B981;"></span>
+                      <input type="text" id="input-hex-cor" class="form-input-mini" value="#10B981" onchange="atualizarCorVisual(this.value)">
+                    </div>
+                  </div>
+
+                  <div class="form-grupo-mini">
+                    <label>Domínio da API</label>
+                    <input type="text" id="input-dominio-api" class="form-input-mini" value="api.vertice.com.br">
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 0.5rem; margin-top: 1.25rem;">
+                <button class="btn btn-verde" style="flex: 1; justify-content: center;" onclick="salvarMarcaRapida()">
+                  Salvar Marca
+                </button>
+                <button class="btn btn-outline" style="justify-content: center;" onclick="navegarPara('whitelabel')" title="Configurações completas de marca">
+                  Mais Opções ›
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabela: Meus Clientes -->
+          <div class="card-dashboard tabela-card">
+            <div class="card-dashboard-header">
+              <h3 class="card-dashboard-titulo">Meus clientes</h3>
+              <div class="busca-tabela-wrap">
+                <input type="text" class="form-input-busca" id="busca-clientes-revenda" placeholder="Buscar cliente por nome ou e-mail..." oninput="filtrarTabelaClientes(this.value)">
+              </div>
+            </div>
+
+            <div class="tabela-responsiva">
+              <table class="tabela-padrao">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Plano</th>
+                    <th>Instâncias</th>
+                    <th>Status</th>
+                    <th>Mensalidade</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-clientes-revenda-corpo">
+                  <tr><td colspan="6" style="padding: 2rem; text-align: center; color: #64748b;">Carregando clientes da revenda...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ================================================================
+             TELA 03: CLIENTE FINAL - SUAS CONEXÕES SOB CONTROLE (IMAGE 3)
+             ================================================================ -->
+        <div id="visao-cliente-final" class="visao-bloco" style="display: none;">
+          
+          <!-- Cabeçalho Cliente Final -->
+          <div class="page-header">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 0.25rem;">
+                <h2 class="page-title" style="margin-bottom: 0;">Suas conexões sob controle</h2>
+                <span class="badge-plano azul" id="cliente-ativo-tag" style="font-size: 0.82rem; padding: 3px 10px;">Clínica Essência</span>
+              </div>
+              <p class="page-subtitle">Conecte seu WhatsApp e gerencie suas integrações</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <select id="select-cliente-ativo" class="form-input" style="padding: 0.45rem 0.75rem; font-size: 0.85rem;" onchange="trocarClienteAtivo(this.value)" title="Filtrar por cliente">
+                <option value="">Todas as Instâncias</option>
+              </select>
+              <button class="btn btn-verde" onclick="abrirModalNovaInstancia()">
+                <span>+</span> Nova instância
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 Métricas de Conexão e Mensagens -->
+          <div class="metricas-quad-grid">
+            <div class="card-metrica">
+              <div class="metrica-topo">
+                <div class="metrica-ico-circle verde-claro">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                </div>
+              </div>
+              <div class="metrica-rotulo">Instâncias conectadas</div>
+              <div class="metrica-numero" id="cliente-instancias-num">3 <span style="font-size: 1rem; color: #64748b; font-weight: normal;">de 5</span></div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="cliente-progress-fill" style="width: 60%;"></div>
+              </div>
+            </div>
+
+            <div class="card-metrica">
+              <div class="metrica-topo">
+                <div class="metrica-ico-circle verde-claro">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </div>
+              </div>
+              <div class="metrica-rotulo">Mensagens no mês</div>
+              <div class="metrica-numero">28.492</div>
+              <div class="metrica-variacao positiva">
+                <span class="seta-trend">↗</span> 12% <span class="variacao-sub">em relação ao mês anterior</span>
+              </div>
+            </div>
+
+            <div class="card-metrica">
+              <div class="metrica-topo">
+                <div class="metrica-ico-circle verde-claro">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+              </div>
+              <div class="metrica-rotulo">Taxa de entrega</div>
+              <div class="metrica-numero">99,4%</div>
+              <div class="metrica-variacao positiva">
+                <span class="seta-trend">↗</span> 0,6 p.p. <span class="variacao-sub">em relação ao mês anterior</span>
+              </div>
+            </div>
+
+            <div class="card-metrica">
+              <div class="metrica-topo">
+                <div class="metrica-ico-circle verde-claro">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+              </div>
+              <div class="metrica-rotulo">Tempo de resposta</div>
+              <div class="metrica-numero">142 ms</div>
+              <div class="metrica-variacao positiva">
+                <span class="seta-trend">↓</span> 28% <span class="variacao-sub">em relação ao mês anterior</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Seção de Cartões de Instâncias WhatsApp (Como em Image 3) -->
+          <div class="secao-instancias-header">
+            <h3 class="secao-titulo-card">Minhas instâncias</h3>
+            <span class="contador-instancias-rotulo" id="contador-instancias-sub">3 de 5 instâncias conectadas</span>
+          </div>
+
+          <!-- Grid dos Cartões de WhatsApp -->
+          <div class="grid-instancias-cards" id="grid-instancias-cliente">
+            
+            <!-- Cartão 1: Atendimento (Conectado) -->
+            <div class="card-whatsapp-instancia">
+              <div class="inst-card-topo">
+                <div class="inst-icon-title">
+                  <div class="whatsapp-circle verde">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                      <path d="M12.031 2c-5.508 0-9.984 4.477-9.984 9.984 0 1.761.458 3.479 1.332 5.002l-1.417 5.178 5.305-1.391c1.472.802 3.125 1.227 4.764 1.227 5.508 0 9.984-4.477 9.984-9.984 0-5.507-4.476-9.984-9.984-9.984zm0 18.25c-1.492 0-2.955-.4-4.234-1.157l-.304-.18-3.146.825.839-3.067-.198-.315c-.832-1.325-1.272-2.868-1.272-4.436 0-4.542 3.695-8.237 8.237-8.237 4.543 0 8.237 3.695 8.237 8.237 0 4.542-3.694 8.237-8.237 8.237z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 class="inst-nome">Atendimento</h4>
+                    <p class="inst-sub">Suporte e atendimento ao cliente</p>
+                  </div>
+                </div>
+                <span class="badge-status-pill online">● Conectado</span>
+              </div>
+
+              <div class="inst-telefone">+55 11 91234-5678</div>
+
+              <div class="inst-estatisticas">
+                <div class="estat-item">
+                  <span class="estat-ico">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  </span>
+                  <div>
+                    <strong>28.341</strong>
+                    <small>mensagens no mês</small>
+                  </div>
+                </div>
+                <div class="estat-item">
+                  <span class="estat-ico">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </span>
+                  <div>
+                    <strong>143 ms</strong>
+                    <small>tempo de resposta</small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="inst-acoes-botoes">
+                <button class="btn btn-outline" onclick="abrirModalWebhook('inst_atend', 'https://api.empresa.com/webhook', '')">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  Webhook
+                </button>
+                <button class="btn btn-outline" onclick="abrirTestadorComInstancia('inst_atend')">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  Testar Envio
+                </button>
+                <button class="btn-menu-tres-pontos" onclick="desconectarInstancia('inst_atend')" title="Opções">⋮</button>
+              </div>
+            </div>
+
+            <!-- Cartão 2: Comercial (Conectado) -->
+            <div class="card-whatsapp-instancia">
+              <div class="inst-card-topo">
+                <div class="inst-icon-title">
+                  <div class="whatsapp-circle verde">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                      <path d="M12.031 2c-5.508 0-9.984 4.477-9.984 9.984 0 1.761.458 3.479 1.332 5.002l-1.417 5.178 5.305-1.391c1.472.802 3.125 1.227 4.764 1.227 5.508 0 9.984-4.477 9.984-9.984 0-5.507-4.476-9.984-9.984-9.984zm0 18.25c-1.492 0-2.955-.4-4.234-1.157l-.304-.18-3.146.825.839-3.067-.198-.315c-.832-1.325-1.272-2.868-1.272-4.436 0-4.542 3.695-8.237 8.237-8.237 4.543 0 8.237 3.695 8.237 8.237 0 4.542-3.694 8.237-8.237 8.237z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 class="inst-nome">Comercial</h4>
+                    <p class="inst-sub">Vendas e prospecção</p>
+                  </div>
+                </div>
+                <span class="badge-status-pill online">● Conectado</span>
+              </div>
+
+              <div class="inst-telefone">+55 11 98765-4321</div>
+
+              <div class="inst-estatisticas">
+                <div class="estat-item">
+                  <span class="estat-ico">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  </span>
+                  <div>
+                    <strong>162</strong>
+                    <small>mensagens no mês</small>
+                  </div>
+                </div>
+                <div class="estat-item">
+                  <span class="estat-ico">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </span>
+                  <div>
+                    <strong>118 ms</strong>
+                    <small>tempo de resposta</small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="inst-acoes-botoes">
+                <button class="btn btn-outline" onclick="abrirModalWebhook('inst_comercial', 'https://api.empresa.com/webhook', '')">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  Webhook
+                </button>
+                <button class="btn btn-outline" onclick="abrirTestadorComInstancia('inst_comercial')">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  Testar Envio
+                </button>
+                <button class="btn-menu-tres-pontos" onclick="desconectarInstancia('inst_comercial')" title="Opções">⋮</button>
+              </div>
+            </div>
+
+            <!-- Cartão 3: Homologação (Desconectado com Botão de Conectar) -->
+            <div class="card-whatsapp-instancia desconectado">
+              <div class="inst-card-topo">
+                <div class="inst-icon-title">
+                  <div class="whatsapp-circle cinza">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                      <path d="M12.031 2c-5.508 0-9.984 4.477-9.984 9.984 0 1.761.458 3.479 1.332 5.002l-1.417 5.178 5.305-1.391c1.472.802 3.125 1.227 4.764 1.227 5.508 0 9.984-4.477 9.984-9.984 0-5.507-4.476-9.984-9.984-9.984zm0 18.25c-1.492 0-2.955-.4-4.234-1.157l-.304-.18-3.146.825.839-3.067-.198-.315c-.832-1.325-1.272-2.868-1.272-4.436 0-4.542 3.695-8.237 8.237-8.237 4.543 0 8.237 3.695 8.237 8.237 0 4.542-3.694 8.237-8.237 8.237z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 class="inst-nome">Homologação</h4>
+                    <p class="inst-sub">Ambiente de testes e homologação</p>
+                  </div>
+                </div>
+                <span class="badge-status-pill offline">● Desconectado</span>
+              </div>
+
+              <div class="inst-telefone">+55 11 99876-5432</div>
+
+              <!-- Box de QR Code Escanear -->
+              <div class="box-qr-scan-placeholder" onclick="abrirModalConectarInstanciaPrincipal()">
+                <span class="qr-micro-ico">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                </span>
+                <span>Escaneie o QR Code para conectar sua instância WhatsApp</span>
+              </div>
+
+              <div class="inst-acoes-botoes">
+                <button class="btn btn-verde-full" onclick="abrirModalConectarInstanciaPrincipal()">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 2c-5.508 0-9.984 4.477-9.984 9.984 0 1.761.458 3.479 1.332 5.002l-1.417 5.178 5.305-1.391c1.472.802 3.125 1.227 4.764 1.227 5.508 0 9.984-4.477 9.984-9.984 0-5.507-4.476-9.984-9.984-9.984z"/></svg>
+                  Conectar WhatsApp
+                </button>
+                <button class="btn-menu-tres-pontos" onclick="abrirModalNovaInstancia()" title="Nova">⋮</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Linha Inferior: Volume de Mensagens + Meu Plano -->
+          <div class="grid-dois-paineis" style="margin-top: 2rem;">
+            
+            <!-- Gráfico Volume de Mensagens -->
+            <div class="card-dashboard">
+              <div class="card-dashboard-header">
+                <h3 class="card-dashboard-titulo">Volume de mensagens</h3>
+                <div class="select-periodo-wrap">
+                  <select class="select-periodo">
+                    <option>Últimos 30 dias</option>
+                    <option>Últimos 7 dias</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grafico-container">
+                <svg viewBox="0 0 650 200" class="svg-grafico">
+                  <defs>
+                    <linearGradient id="grad-volume-cliente" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#10b981" stop-opacity="0.3"/>
+                      <stop offset="100%" stop-color="#10b981" stop-opacity="0.0"/>
+                    </linearGradient>
+                  </defs>
+                  <line x1="30" y1="20" x2="630" y2="20" stroke="#f1f5f9" stroke-width="1"/>
+                  <line x1="30" y1="70" x2="630" y2="70" stroke="#f1f5f9" stroke-width="1"/>
+                  <line x1="30" y1="120" x2="630" y2="120" stroke="#f1f5f9" stroke-width="1"/>
+                  <line x1="30" y1="170" x2="630" y2="170" stroke="#f1f5f9" stroke-width="1"/>
+
+                  <text x="0" y="25" class="svg-texto-eixo">2.000</text>
+                  <text x="0" y="75" class="svg-texto-eixo">1.500</
+                </div>
+                <div class="vantagem-item">
+                  <span class="check-circulo">✓</span> Todos os recursos da API
+                </div>
+              </div>
+
+              <button class="btn btn-outline" style="width: 100%; justify-content: center; margin-top: 1.5rem;" onclick="navegarPara('planos')">
+                Ver meu plano ›
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="sub-testador" class="visao-bloco" style="display: none;">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Simulador de Envio de Mensagens</h2>
+              <p class="page-subtitle">Dispare mensagens de teste via WhatsApp Oficial ou em Modo Simulação / Sandbox</p>
+            </div>
+            <button class="btn btn-verde" onclick="abrirModalNovaInstancia()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nova instância
+            </button>
+          </div>
+
+          <div class="card-dashboard" style="max-width: 680px; margin: 0 auto;">
+            <div class="form-grupo">
+              <label class="form-label">Selecione a Instância de Disparo</label>
+              <select id="sim-instancia" class="form-input" onchange="atualizarStatusInstanciaTestador()"></select>
+            </div>
+
+            <!-- Box Dinâmico com Status da Instância Selecionada -->
+            <div id="sim-instancia-status-box" style="margin-bottom: 1.25rem; padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.88rem; display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0;">
+              <span id="sim-instancia-status-txt">Carregando status da instância...</span>
+              <button id="btn-conectar-atalho" class="btn btn-verde-micro" style="display: none;" onclick="abrirModalConectarSelecionada()">Conectar QR Code</button>
+            </div>
+
+            <div class="form-grupo">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <label class="form-label" style="margin-bottom: 0;">Número de Destino (Brasil com DDD)</label>
+                <button type="button" class="btn-link-mini" onclick="preencherNumeroExemplo()" style="background: none; border: none; color: #059669; font-size: 0.78rem; font-weight: 600; cursor: pointer;">Preencher número teste</button>
+              </div>
+              <input type="text" id="sim-telefone" class="form-input" placeholder="(11) 98765-4321 ou 11987654321">
+              <small style="color: #64748b; font-size: 0.8rem;">DDI +55 e ajuste inteligente do 9º dígito aplicados automaticamente.</small>
+            </div>
+
+            <div class="form-grupo">
+              <label class="form-label">Recurso / Endpoint para Testar (Pacotes 1 a 4)</label>
+              <select id="sim-tipo" class="form-input" onchange="alternarTipoEnvioSimulador()">
+                <optgroup label="Pacote 1 • Mensageria Completa &amp; Interativa">
+                  <option value="texto">Texto Oficial (com Citação, Menções e Link Preview)</option>
+                  <option value="audio_gravado">Áudio Gravado na Hora (PTT com Microfone Verde)</option>
+                  <option value="enquete">Enquete Interativa Nativa (Substituto Oficial de Botões)</option>
+                  <option value="documento">Documento PDF / Boleto / Nota Fiscal</option>
+                  <option value="video">Vídeo MP4 / GIF / Nota de Vídeo Circular (PTV)</option>
+                  <option value="localizacao">Localização GPS (Pino no Mapa)</option>
+                  <option value="contato">Cartão de Contato Clicável (vCard 3.0)</option>
+                  <option value="reacao">Reação com Emoji em Mensagem (❤️ 👍 🚀)</option>
+                </optgroup>
+                <optgroup label="Pacote 2 • Inteligência, Validador BR &amp; Presença">
+                  <option value="verificar_numero">Validador em Lote de WhatsApp + 9º Dígito BR (IsOnWhatsApp)</option>
+                  <option value="presenca">Simulação Humana: Digitando... / Gravando Áudio...</option>
+                </optgroup>
+                <optgroup label="Pacote 3 • Grupos, Menção Fantasma &amp; Status 24h">
+                  <option value="mencao_fantasma">Menção Fantasma em Grupo (@todos invisível)</option>
+                  <option value="status_24h">Publicar nos Status / Stories 24h</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <div class="form-grupo" id="grupo-sim-texto">
+              <label class="form-label" id="label-sim-mensagem">Mensagem de Texto</label>
+              <textarea id="sim-mensagem" class="form-input" rows="3" placeholder="Olá! Sua notificação via WooHub API foi processada com sucesso."></textarea>
+            </div>
+
+            <!-- Campos Extras Dinâmicos para Enquete / Documento / Localização / Contato -->
+            <div class="form-grupo" id="grupo-sim-opcoes-enquete" style="display: none;">
+              <label class="form-label">Opções da Enquete (separadas por vírgula)</label>
+              <input type="text" id="sim-enquete-opcoes" class="form-input" value="1. Financeiro e 2ª Via, 2. Suporte Técnico, 3. Falar com Atendente">
+            </div>
+
+            <!-- Opção de Modo Sandbox / Simulação Rápida -->
+            <div style="margin: 1.25rem 0; padding: 0.85rem 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+              <label style="display: flex; align-items: center; gap: 0.65rem; cursor: pointer; font-size: 0.88rem; color: #166534; font-weight: 600;">
+                <input type="checkbox" id="sim-modo-sandbox" style="accent-color: #059669; width: 17px; height: 17px;">
+                <span>Simular envio de teste sem celular conectado (Modo Sandbox / Homologação)</span>
+              </label>
+              <p style="margin: 0.35rem 0 0 1.7rem; font-size: 0.78rem; color: #15803d;">
+                Registra o disparo no histórico de auditoria e dispara webhooks configurados sem depender de conexão do celular.
+              </p>
+            </div>
+
+            <button id="btn-disparar-teste" class="btn btn-verde" style="width: 100%; justify-content: center; margin-top: 0.5rem;" onclick="dispararMensagemTeste()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              Disparar Mensagem de Teste
+            </button>
+
+            <div id="sim-resultado" style="margin-top: 1.25rem; display: none;"></div>
+          </div>
+        </div>
+
+        <!-- SUB-PÁGINA: CUSTOMIZAÇÃO DE MARCA (WHITE-LABEL) -->
+        <div id="sub-whitelabel" class="visao-bloco" style="display: none;">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Personalização de Marca Própria (White-Label)</h2>
+              <p class="page-subtitle">Configure seu próprio nome, cores e subdomínio CNAME para sua revenda</p>
+            </div>
+          </div>
+
+          <div class="grid-dois-paineis">
+            <div class="card-dashboard">
+              <h3 class="card-dashboard-titulo" style="margin-bottom: 1.5rem;">Configurações de Identidade</h3>
+
+              <div class="form-grupo">
+                <label class="form-label">Nome da Empresa / Marca</label>
+                <input type="text" id="wl-nome" class="form-input" placeholder="Ex: Agência Vértice">
+              </div>
+
+              <div class="form-grupo">
+                <label class="form-label">Domínio Personalizado (CNAME)</label>
+                <input type="text" id="wl-dominio" class="form-input" placeholder="api.vertice.com.br">
+              </div>
+
+              <div class="form-grupo">
+                <label class="form-label">Cor Primária</label>
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                  <input type="color" id="wl-cor-primaria" value="#059669" style="width: 50px; height: 40px; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer;">
+                  <span style="font-family: monospace; font-weight: bold; color: #334155;">#059669</span>
+                </div>
+              </div>
+
+              <button class="btn btn-verde" style="width: 100%; justify-content: center; margin-top: 1.5rem;" onclick="salvarConfiguracaoWhiteLabel()">
+                Salvar Configurações de Marca
+              </button>
+            </div>
+
+            <div class="card-dashboard">
+              <h3 class="card-dashboard-titulo" style="margin-bottom: 1rem;">Prévia ao Vivo do Seu Cliente</h3>
+              <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem;">Seus clientes acessarão a plataforma sob seu domínio com a sua marca exclusiva:</p>
+              
+              <div class="preview-caixa-wl">
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem;">
+                  <div class="empresa-avatar verde" id="preview-logo-box" style="width: 44px; height: 44px; font-size: 1.25rem;">W</div>
+                  <div>
+                    <h4 id="preview-nome" style="font-size: 1.15rem; font-weight: 700;">Agência Vértice</h4>
+                    <span style="color: #059669; font-size: 0.82rem; font-weight: 600;">api.vertice.com.br</span>
+                  </div>
+                </div>
+                <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; font-size: 0.85rem; color: #475569; line-height: 1.6;">
+                  <div>• Certificado SSL: <strong style="color: #059669;">Ativo (HTTPS Automático)</strong></div>
+                  <div>• DNS CNAME: <strong style="color: #059669;">Apontado Corretamente</strong></div>
+                  <div>• Painel de Clientes: <strong style="color: #059669;">100% White-Label</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MÓDULO BYOI: INFRAESTRUTURA ISOLADA DA REVENDA (SUPABASE + MINIO PRÓPRIO) -->
+          <div class="card-dashboard" style="margin-top: 1.5rem;">
+            <div class="card-dashboard-header" style="margin-bottom: 1rem;">
+              <div>
+                <h3 class="card-dashboard-titulo">Infraestrutura Isolada da Revenda (Supabase + MinIO S3 Próprio)</h3>
+                <p style="color: #64748b; font-size: 0.88rem; margin-top: 0.25rem;">Configure o banco Supabase e o servidor MinIO S3 exclusivos desta revenda. Todos os áudios PTT, vídeos, PDFs e sessões ficam isolados na conta da revenda (custo zero para a matriz).</p>
+              </div>
+              <span class="badge-status-pill online" id="badge-status-infra-isolada">● Pronto para Configurar</span>
+            </div>
+
+            <div class="grid-dois-paineis" style="margin-top: 1rem;">
+              <!-- Coluna 1: Supabase Isolado -->
+              <div style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <h4 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">1. Banco de Dados Supabase Isolado (PostgreSQL)</h4>
+                <p style="font-size: 0.82rem; color: #64748b; margin-bottom: 1rem;">Informe a URI de conexão do Supabase da revenda. O sistema converte automaticamente para o Pooler Session Mode (porta 5432) e cria todas as tabelas.</p>
+
+                <div class="form-grupo">
+                  <label class="form-label">URI de Conexão PostgreSQL (Supabase)</label>
+                  <input type="text" id="infra-supabase-uri" class="form-input" placeholder="postgresql://postgres.xxxx:senha@aws-0-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require">
+                </div>
+
+                <button type="button" class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="testarEMigrarSupabaseRevenda()">
+                  Testar Conexão &amp; Criar Tabelas Automaticamente
+                </button>
+                <div id="resultado-teste-supabase" style="display: none; margin-top: 0.75rem; padding: 0.75rem; border-radius: 8px; font-size: 0.84rem;"></div>
+              </div>
+
+              <!-- Coluna 2: MinIO / S3 Isolado -->
+              <div style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <h4 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">2. Armazenamento de Mídias MinIO / S3 Isolado</h4>
+                <p style="font-size: 0.82rem; color: #64748b; margin-bottom: 1rem;">Áudios PTT, fotos, vídeos e PDFs da revenda são enviados direto para o bucket MinIO/S3 dela com geração automática de link nos Webhooks.</p>
+
+                <div class="form-grupo">
+                  <label class="form-label">Endpoint MinIO / S3</label>
+                  <input type="text" id="infra-minio-endpoint" class="form-input" placeholder="https://s3.suarevenda.com.br">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                  <div class="form-grupo">
+                    <label class="form-label">Access Key</label>
+                    <input type="text" id="infra-minio-access" class="form-input" placeholder="minio_access_key">
+                  </div>
+                  <div class="form-grupo">
+                    <label class="form-label">Secret Key</label>
+                    <input type="password" id="infra-minio-secret" class="form-input" placeholder="••••••••••••••••">
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                  <div class="form-grupo">
+                    <label class="form-label">Nome do Bucket</label>
+                    <input type="text" id="infra-minio-bucket" class="form-input" value="woohub-midias" placeholder="woohub-midias">
+                  </div>
+                  <div class="form-grupo">
+                    <label class="form-label">URL Pública / CDN (Opcional)</label>
+                    <input type="text" id="infra-minio-public-url" class="form-input" placeholder="https://cdn.suarevenda.com.br">
+                  </div>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                  <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer;">
+                    <input type="checkbox" id="infra-minio-ssl" checked> Usar HTTPS (SSL)
+                  </label>
+                  <button type="button" class="btn btn-outline" onclick="testarMinioRevenda()">
+                    Testar &amp; Criar Bucket MinIO
+                  </button>
+                </div>
+                <div id="resultado-teste-minio" style="display: none; margin-top: 0.5rem; padding: 0.75rem; border-radius: 8px; font-size: 0.84rem;"></div>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-verde" style="width: 100%; justify-content: center; margin-top: 1.25rem;" onclick="salvarInfraestruturaRevenda()">
+              Salvar Infraestrutura Isolada (Supabase + MinIO) da Revenda
+            </button>
+          </div>
+        </div>
+
+        <div id="sub-email-resend" class="visao-bloco" style="display: none;">
+          <div class="page-header"><div><h2 class="page-title">E-mails transacionais e Resend</h2><p class="page-subtitle">Personalize o remetente da sua revenda e teste o envio de e-mails.</p></div><span id="resend-status-badge" class="badge-status-pill offline">● Não configurado</span></div>
+          <div class="grid-dois-paineis">
+            <div class="card-dashboard">
+              <h3 class="card-dashboard-titulo">Configuração do remetente</h3>
+              <p style="color:#64748b;font-size:.84rem;line-height:1.5;margin-bottom:1rem;">Use uma API Key do Resend e um domínio previamente verificado na conta da revenda. A chave nunca será exibida novamente.</p>
+              <div class="form-grupo"><label class="form-label">API Key do Resend</label><input type="password" id="resend-api-key" class="form-input" placeholder="re_..." autocomplete="new-password"></div>
+              <div class="form-grupo"><label class="form-label">Domínio verificado</label><input type="text" id="resend-dominio" class="form-input" placeholder="mail.suarevenda.com.br"></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem"><div class="form-grupo"><label class="form-label">E-mail remetente</label><input type="email" id="resend-remetente" class="form-input" placeholder="contato@mail.suarevenda.com.br"></div><div class="form-grupo"><label class="form-label">Nome exibido</label><input type="text" id="resend-nome" class="form-input" placeholder="Sua Marca"></div></div>
+              <button class="btn btn-verde" style="width:100%;justify-content:center" onclick="salvarConfiguracaoResend()">Salvar configuração do Resend</button>
+            </div>
+            <div class="card-dashboard">
+              <h3 class="card-dashboard-titulo">Teste e templates</h3>
+              <p style="color:#64748b;font-size:.84rem;line-height:1.5">O mesmo remetente será usado para convites, recuperação de acesso e notificações transacionais.</p>
+              <div class="form-grupo"><label class="form-label">Enviar teste para</label><input type="email" id="resend-destinatario-teste" class="form-input" placeholder="seu@email.com"></div>
+              <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="testarConfiguracaoResend()">Enviar e-mail de teste</button>
+              <div id="resend-resultado" style="display:none;margin-top:1rem;padding:.75rem;border-radius:8px;font-size:.84rem"></div>
+              <div style="margin-top:1.2rem;padding:1rem;background:#f8fafc;border-radius:10px;color:#475569;font-size:.8rem;line-height:1.55"><strong>Templates previstos</strong><br>Convite de cliente · Recuperação de acesso · Confirmação de cadastro · Alertas de conexão e cobrança.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-PÁGINA: AUDITORIA E LOGS -->
+        <div id="sub-logs" class="visao-bloco" style="display: none;">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Auditoria e Logs de Mensagens</h2>
+              <p class="page-subtitle">Rastreamento de envios, entregas e eventos de WhatsApp</p>
+            </div>
+            <button class="btn btn-outline" onclick="carregarLogs()">
+              <span>🔄</span> Atualizar Logs
+            </button>
+          </div>
+
+          <div class="card-dashboard tabela-card">
+            <div class="tabela-responsiva">
+              <table class="tabela-padrao">
+                <thead>
+                  <tr>
+                    <th>Data/Hora (Brasília)</th>
+                    <th>Instância</th>
+                    <th>Tipo</th>
+                    <th>Destinatário</th>
+                    <th>Direção</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-logs-corpo">
+                  <tr>
+                    <td colspan="6" style="padding: 2.5rem; text-align: center; color: #64748b;">Nenhum log registrado ainda.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-PÁGINA: DOCUMENTAÇÃO API -->
+        <div id="sub-docs" class="visao-bloco" style="display: none;">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Guia de Integração da API (Pacotes 1 a 4 • 100% Brasil)</h2>
+              <p class="page-subtitle">Integração completa de Mensageria, Enquetes Interativas, Atendimento, Grupos, Status 24h e Blindagem Anti-Ban</p>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div class="card-dashboard">
+              <h3 style="color: #059669; margin-bottom: 0.5rem; font-size: 1.15rem;">1. Pacote 1: Mensageria Completa &amp; Interativa</h3>
+              <p style="color: #64748b; font-size: 0.88rem; margin-bottom: 1rem;">Texto com Citação/Menção/LinkPreview, Áudio PTT Microfone Verde, Enquetes Interativas (substituto oficial de botões), Documentos, Vídeos/PTV, Stickers, Localização, vCard, Reações, Edição e Revogação:</p>
+              <pre class="codigo-pre"><code># 1.1 Texto Oficial (com Quote/Reply, Menções, Link Preview e Simulação Digitando)
+curl -X POST http://localhost:8080/api/v1/mensagem/texto \
+  -H "Content-Type: application/json" -H "x-api-key: {chave_da_instancia}" \
+  -d '{
+    "destinatario": "11987654321",
+    "mensagem": "Olá! Confira seu pedido em https://woohub.com.br",
+    "id_mensagem_citada": "3EB0123456",
+    "atraso_digitacao_ms": 1500
+  }'
+
+# 1.2 Enquete Interativa Nativa (Substituto Oficial 100% Compatível de Botões)
+curl -X POST http://localhost:8080/api/v1/mensagem/enquete \
+  -H "Content-Type: application/json" -H "x-api-key: {chave_da_instancia}" \
+  -d '{
+    "destinatario": "11987654321",
+    "pergunta": "Com qual setor você deseja falar?",
+    "opcoes": ["1. Financeiro / 2ª Via", "2. Suporte Técnico", "3. Comercial"],
+    "maximo_selecao": 1
+  }'
+
+# 1.3 Documento PDF / Boleto / Nota Fiscal (ou /video, /imagem, /audio, /sticker, /localizacao, /contato)
+curl -X POST http://localhost:8080/api/v1/mensagem/documento \
+  -H "Content-Type: application/json" -H "x-api-key: {chave_da_instancia}" \
+  -d '{
+    "destinatario": "11987654321",
+    "documento_base64": "JVBERi0xLjQK...",
+    "nome_arquivo": "boleto_mensalidade.pdf",
+    "legenda": "Segue seu boleto atualizado."
+  }'
+
+# 1.4 Reação com Emoji, Edição em Tempo Real e Revogação (Apagar para Todos)
+POST /api/v1/mensagem/reacao   {"destinatario":"11987654321","id_mensagem_alvo":"ID_MSG","emoji":"❤️"}
+POST /api/v1/mensagem/editar   {"destinatario":"11987654321","id_mensagem_alvo":"ID_MSG","novo_texto":"Texto corrigido!"}
+POST /api/v1/mensagem/revogar  {"destinatario":"11987654321","id_mensagem_alvo":"ID_MSG"}</code></pre>
+            </div>
+
+            <div class="card-dashboard">
+              <h3 style="color: #059669; margin-bottom: 0.5rem; font-size: 1.15rem;">2. Pacote 2: Validador de Números BR, Perfil, Presença, Leitura &amp; Etiquetas</h3>
+              <p style="color: #64748b; font-size: 0.88rem; margin-bottom: 1rem;">Higienize listas antes de campanhas com resolução automática do 9º dígito brasileiro, consulte foto/perfil comercial e simule comportamento humano:</p>
+              <pre class="codigo-pre"><code># 2.1 Validador em Lote (IsOnWhatsApp + Resolução do 9º Dígito BR)
+curl -X POST http://localhost:8080/api/v1/contato/verificar \
+  -H "Content-Type: application/json" -H "x-api-key: {chave_da_instancia}" \
+  -d '{"numeros": ["(11) 98765-4321", "62988887777"]}'
+
+# 2.2 Presença de Chat (digitando | gravando_audio | pausado | online)
+POST /api/v1/chat/presenca     {"destinatario":"11987654321","estado":"gravando_audio"}
+
+# 2.3 Marcar Como Lido (2 Checks Azuis), Estado do Chat e Etiquetas Business
+POST /api/v1/chat/marcar-lido  {"destinatario":"11987654321","ids_mensagens":["MSG_1"]}
+POST /api/v1/chat/estado       {"destinatario":"11987654321","acao":"fixar","ativo":true}
+POST /api/v1/etiqueta/gerenciar {"acao":"atribuir","destinatario":"11987654321","id_etiqueta":"1","ativo":true}</code></pre>
+            </div>
+
+            <div class="card-dashboard">
+              <h3 style="color: #059669; margin-bottom: 0.5rem; font-size: 1.15rem;">3. Pacote 3 &amp; 4: Grupos, Menção Fantasma (@todos), Status 24h &amp; Blindagem Anti-Ban</h3>
+              <p style="color: #64748b; font-size: 0.88rem; margin-bottom: 1rem;">Automação de lançamentos (impossível na API Oficial da Meta), Stories 24h e proteção por instância (Proxy SOCKS5/HTTP e Rejeição Automática de Chamadas):</p>
+              <pre class="codigo-pre"><code># 3.1 Menção Fantasma em Grupo (Notifica 100% dos membros sem poluir o texto)
+curl -X POST http://localhost:8080/api/v1/grupo/mencao-fantasma \
+  -H "Content-Type: application/json" -H "x-api-key: {chave_da_instancia}" \
+  -d '{"grupo_jid": "120363025987654@g.us", "mensagem": "🚨 Estamos AO VIVO!"}'
+
+# 3.2 Publicar nos Status / Stories 24h (Texto colorido, Imagem ou Vídeo)
+POST /api/v1/status/publicar   {"tipo":"texto","texto":"Promoção 24h! 🔥","cor_fundo":"#059669"}
+
+# 4.1 Blindagem Anti-Ban, Proxy Dedicado e Anti-Chamadas VoIP
+POST /api/v1/instancia/{id}/configuracoes
+{
+  "proxy_url": "socks5://usuario:senha@ip-residencial-br:1080",
+  "rejeitar_chamadas": true,
+  "mensagem_chamada_rejeitada": "Olá! Não atendemos ligações por este número. Envie mensagem de texto.",
+  "ignorar_grupos": false,
+  "leitura_automatica": true,
+  "sempre_online": true
+}</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-PÁGINA: REVENDEDORES -->
+        <div id="sub-revendedores" class="visao-bloco" style="display: none;">
+          <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+            <div><h2 class="page-title">Revendedores</h2><p class="page-subtitle">Cadastre, edite e acompanhe as revendas parceiras da plataforma.</p></div>
+            <button class="btn btn-verde" onclick="abrirModalNovoRevendedor()"><span>+</span> Novo revendedor</button>
+          </div>
+          <div class="card-dashboard tabela-card">
+            <div class="card-dashboard-header"><h3 class="card-dashboard-titulo">Revendas cadastradas</h3><button class="btn btn-outline" onclick="carregarRevendedores()">Atualizar</button></div>
+            <div class="tabela-responsiva"><table class="tabela-padrao"><thead><tr><th>Empresa</th><th>Plano</th><th>Instâncias</th><th>Status</th><th>Receita estimada</th><th>Ações</th></tr></thead><tbody id="tabela-revendedores-admin-detalhes"></tbody></table></div>
+          </div>
+        </div>
+
+        <!-- SUB-PÁGINA: PLANOS E ASSINATURAS B2B -->
+        <div id="sub-planos" class="visao-bloco" style="display: none;">
+          <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div>
+              <h2 class="page-title">Planos e Assinaturas B2B</h2>
+              <p class="page-subtitle">Gerencie seu plano atual, franquia de instâncias e recursos liberados nos Pacotes 1 a 4</p>
+            </div>
+            <button class="btn btn-verde" onclick="abrirModalNovoPlano()">
+              <span>+</span> Novo plano
+            </button>
+          </div>
+
+          <div class="card-dashboard" style="margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+            <div><strong>Catálogo comercial</strong><p style="margin:.25rem 0 0;color:#64748b;font-size:.85rem;">Crie planos específicos para o Mega Admin ou para revendedores.</p></div>
+            <span class="badge-plano azul">Mega Admin · Revendedor</span>
+          </div>
+
+          <div id="grid-planos-assinaturas" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+            <!-- Renderizado dinamicamente por carregarPlanos() -->
+          </div>
+
+          <div class="card-dashboard">
+            <h3 class="card-dashboard-titulo" style="margin-bottom: 1rem;">Matriz de Recursos Liberados (Pacotes 1, 2, 3 e 4)</h3>
+            <div class="tabela-responsiva">
+              <table class="tabela-padrao">
+                <thead>
+                  <tr>
+                    <th>Pacote / Funcionalidade</th>
+                    <th>Starter / Básico</th>
+                    <th>Business Pro</th>
+                    <th>Enterprise White-Label</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Pacote 1 • Mensageria Completa &amp; Enquetes Interativas</strong><br><small style="color: #64748b;">Texto, Áudio PTT Microfone Verde, Vídeo/PTV, PDF, Sticker, Enquetes, Localização, vCard, Reação, Editar e Apagar</small></td>
+                    <td><span class="badge-status-pill online">✓ Liberado</span></td>
+                    <td><span class="badge-status-pill online">✓ Liberado</span></td>
+                    <td><span class="badge-status-pill online">✓ Liberado</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Pacote 2 • Inteligência, Validador BR &amp; Webhooks Nativos</strong><br><small style="color: #64748b;">Validador Automático 9º Dígito BR, Download de Mídias nos Webhooks, Assinatura HMAC SHA-256 e Auto-Download</small></td>
+                    <td><span class="badge-status-pill online">✓ Liberado</span></td>
+                    <td><span class="badge-status-pill online">✓ Liberado</span></td>
+                    <td><span class="badge-status-pill online">✓ Liberado</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Pacote 3 • Grupos, Menção Fantasma (@todos) &amp; Status 24h</strong><br><small style="color: #64748b;">Notificar 100% dos membros de grupos silenciosamente, Postar stories nos Status (texto, foto, vídeo)</small></td>
+                    <td><span class="badge-plano cinza">Opcional</span></td>
+                    <td><span class="badge-status-pill online">✓ Liberado</span></td>
+                    <td><span class="badge-status-pill online">✓ Liberado</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Pacote 4 • Blindagem Anti-Ban, Proxy &amp; Anti-Chamadas VoIP</strong><br><small style="color: #64748b;">Proxy Dedicado SOCKS5/HTTP, Rejeição Automática de Chamadas de Voz/Vídeo, Leitura Automática e Sempre Online</small></td>
+                    <td><span class="badge-plano cinza">Opcional</span></td>
+                    <td><span class="badge-status-pill online">✓ Liberado</span></td>
+                    <td><span class="badge-status-pill online">✓ Liberado</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-PÁGINA: CENTRAL DE CAIXAS, INTEGRAÇÕES E ATRIBUIÇÃO DE ORIGEM -->
+        <div id="sub-integracoes" class="visao-bloco" style="display: none;">
+          <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div>
+              <h2 class="page-title">Central de Caixas &amp; Integrações Nativas</h2>
+              <p class="page-subtitle">Conecte sua instância nativamente com Chatwoot, Typebot, n8n, Kommo CRM, RD Station e Webhooks Universais</p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+              <label style="font-size: 0.82rem; font-weight: 600; color: #64748b;">Instância Ativa:</label>
+              <select id="select-instancia-integracoes" class="form-input" style="width: 220px;" onchange="trocarInstanciaIntegracoes(this.value)">
+                <!-- Preenchido dinamicamente via JS -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Abas de Navegação Interna -->
+          <div class="abas-navegacao" style="display: flex; gap: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 1.5rem;">
+            <button type="button" class="aba-btn ativo" id="aba-btn-caixas" onclick="alternarAbaIntegracoes('caixas')">
+              🔌 Caixas Conectoras (6 Nativas)
+            </button>
+            <button type="button" class="aba-btn" id="aba-btn-atribuicoes" onclick="alternarAbaIntegracoes('atribuicoes')">
+              🎯 Rastreamento de Origem &amp; Campanhas (Meta / Google Ads)
+            </button>
+          </div>
+
+          <!-- CONTEÚDO ABA 1: CAIXAS CONECTORAS -->
+          <div id="aba-conteudo-caixas">
+            <div class="grid-caixas-integracao" id="grid-caixas-integracao" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem;">
+              <!-- Renderizado dinamicamente pelo JavaScript (Chatwoot, Typebot, n8n, Kommo CRM, RD Station, Webhooks) -->
+            </div>
+          </div>
+
+          <!-- CONTEÚDO ABA 2: RASTREAMENTO DE ORIGEM & CAMPANHAS -->
+          <div id="aba-conteudo-atribuicoes" style="display: none;">
+            <!-- Cards de Métricas de Origem -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+              <div class="card-metric" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1.25rem;">
+                <span class="card-metric-label" style="font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 0.25rem;">Total de Atribuições</span>
+                <span class="card-metric-valor" id="metric-total-atrib" style="color: #10B981; font-size: 1.8rem; font-weight: 800;">0</span>
+              </div>
+              <div class="card-metric" style="background: rgba(225, 48, 108, 0.05); border: 1px solid rgba(225, 48, 108, 0.2); border-radius: 12px; padding: 1.25rem;">
+                <span class="card-metric-label" style="font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 0.25rem;">Meta Ads (Insta/FB)</span>
+                <span class="card-metric-valor" id="metric-meta-atrib" style="color: #E1306C; font-size: 1.8rem; font-weight: 800;">0</span>
+              </div>
+              <div class="card-metric" style="background: rgba(66, 133, 244, 0.05); border: 1px solid rgba(66, 133, 244, 0.2); border-radius: 12px; padding: 1.25rem;">
+                <span class="card-metric-label" style="font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 0.25rem;">Google Ads (Search/GCLID)</span>
+                <span class="card-metric-valor" id="metric-google-atrib" style="color: #4285F4; font-size: 1.8rem; font-weight: 800;">0</span>
+              </div>
+              <div class="card-metric" style="background: rgba(100, 116, 139, 0.05); border: 1px solid rgba(100, 116, 139, 0.2); border-radius: 12px; padding: 1.25rem;">
+                <span class="card-metric-label" style="font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 0.25rem;">Orgânico / Outros</span>
+                <span class="card-metric-valor" id="metric-outros-atrib" style="color: #94A3B8; font-size: 1.8rem; font-weight: 800;">0</span>
+              </div>
+            </div>
+
+            <!-- Tabela de Contatos & Origem -->
+            <div class="card-dashboard">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.05rem; font-weight: 700;">Leads e Campanhas de Origem Rastreadas</h3>
+                <button type="button" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="carregarAtribuicoesOrigem()">
+                  🔄 Atualizar
+                </button>
+              </div>
+              <div class="tabela-container">
+                <table class="tabela-custom">
+                  <thead>
+                    <tr>
+                      <th>Telefone</th>
+                      <th>Canal de Origem</th>
+                      <th>Campanha</th>
+                      <th>UTM Source / Medium</th>
+                      <th>Identificador / Click ID</th>
+                      <th>Primeira Mensagem</th>
+                      <th>Data/Hora</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabela-atribuicoes-corpo">
+                    <tr><td colspan="7" style="text-align: center; color: #64748b; padding: 2rem;">Nenhuma atribuição registrada para esta instância.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       3. MODAIS: QR CODE AO VIVO, NOVA INSTÂNCIA, ALTERAR SENHA E WEBHOOK
+       ==================================================================== -->
+
+  <!-- MODAL: CONEXÃO QR CODE / PAIRING CODE (AO VIVO VIA SSE) -->
+  <div class="modal-overlay" id="modal-conectar">
+    <div class="modal-box modal-box-central">
+      <button class="modal-fechar-btn" onclick="fecharModais()">&times;</button>
+      <h3 class="modal-titulo" id="modal-conectar-titulo">Conectar WhatsApp</h3>
+      <p style="color: #64748b; font-size: 0.88rem; margin-bottom: 1.25rem;">Escaneie o QR Code ou conecte digitando o código de pareamento no celular.</p>
+
+      <!-- Alternador QR Code / Código Numérico -->
+      <div class="tabs-conexao">
+        <button class="tab-btn ativo" id="btn-modo-qr" onclick="alternarModoConexao('qr')">📷 QR Code Dinâmico</button>
+        <button class="tab-btn" id="btn-modo-codigo" onclick="alternarModoConexao('codigo')">🔢 Código de 8 Dígitos</button>
+      </div>
+
+      <!-- Modo QR Code -->
+      <div id="secao-modo-qr">
+        <div class="qr-box-quadrado">
+          <img id="qr-img" src="" alt="QR Code WhatsApp" style="display: none;">
+          <div id="qr-carregando" class="qr-loading-spinner">
+            <div class="spinner-grande"></div>
+            <span>Gerando QR Code criptografado...</span>
+          </div>
+        </div>
+        <p class="qr-instrucoes">Abra o WhatsApp no celular &gt; Aparelhos Conectados &gt; Conectar um Aparelho.</p>
+      </div>
+
+      <!-- Modo Código de Pareamento -->
+      <div id="secao-modo-codigo" style="display: none; text-align: left;">
+        <div class="form-grupo">
+          <label class="form-label">Número do Celular (com DDD)</label>
+          <input type="text" id="parear-telefone" class="form-input" placeholder="(11) 98765-4321">
+        </div>
+        <button class="btn btn-verde" style="width: 100%; justify-content: center;" onclick="solicitarCodigoPareamento()">
+          Gerar Código Numérico
+        </button>
+        <div id="box-codigo-resultado" style="margin-top: 1.5rem; text-align: center; display: none;">
+          <div style="font-size: 0.85rem; color: #64748b;">Digite este código no seu WhatsApp:</div>
+          <div id="valor-codigo-pareamento" style="font-size: 2.2rem; font-weight: 800; letter-spacing: 5px; color: #059669; margin: 0.5rem 0;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVA INSTÂNCIA -->
+  <div class="modal-overlay" id="modal-nova-instancia">
+    <div class="modal-box">
+      <button class="modal-fechar-btn" onclick="fecharModais()">&times;</button>
+      <h3 class="modal-titulo">Criar Nova Instância WhatsApp</h3>
+      <p style="color: #64748b; font-size: 0.88rem; margin-bottom: 1.5rem;">Adicione uma nova sessão isolada com suporte a DDI +55 e áudio PTT nativo.</p>
+
+      <div class="form-grupo">
+        <label class="form-label">Nome de Identificação da Instância <span style="color: #dc2626;">*</span></label>
+        <input type="text" id="novo-nome-instancia" class="form-input" placeholder="Ex: Suporte SAC / Vendas Brasil" onkeydown="if(event.key==='Enter') confirmarCriarInstancia()">
+      </div>
+
+      <div class="form-grupo">
+        <label class="form-label">URL do Webhook (Opcional)</label>
+        <input type="url" id="novo-webhook-instancia" class="form-input" placeholder="https://api.seusistema.com.br/webhook" onkeydown="if(event.key==='Enter') confirmarCriarInstancia()">
+        <small style="color: #64748b; font-size: 0.8rem;">Eventos de mensagens e conexões serão despachados automaticamente.</small>
+      </div>
+
+      <button id="btn-confirmar-criar-instancia" class="btn btn-verde" style="width: 100%; justify-content: center; margin-top: 1.25rem;" onclick="confirmarCriarInstancia()">
+        Confirmar e Criar Instância
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVO REVENDEDOR (MEGA ADMIN) -->
+  <div class="modal-overlay" id="modal-plano-admin">
+    <div class="modal-box"><button class="modal-fechar-btn" onclick="fecharModais()">&times;</button><h3 class="modal-titulo">Novo plano comercial</h3><p style="color:#64748b;font-size:.88rem;margin-bottom:1.25rem;">Defina preço, limite, público e recursos do plano.</p>
+      <form id="form-plano-admin" onsubmit="salvarPlanoAdmin(event)"><input type="hidden" id="plano-id-admin"><div class="form-grupo"><label class="form-label">Nome do plano *</label><input id="plano-nome-admin" class="form-input" required placeholder="Ex.: Revenda Pro"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;"><div class="form-grupo"><label class="form-label">Preço mensal *</label><input id="plano-preco-admin" class="form-input" required placeholder="R$ 397,00"></div><div class="form-grupo"><label class="form-label">Limite de instâncias *</label><input id="plano-limite-admin" type="number" min="1" class="form-input" required value="20"></div></div><div class="form-grupo"><label class="form-label">Disponível para</label><select id="plano-publico-admin" class="form-input"><option value="mega">Mega Admin</option><option value="revendedor">Revendedor</option><option value="ambos">Mega Admin e Revendedor</option></select></div><div class="form-grupo"><label class="form-label">Recursos (um por linha)</label><textarea id="plano-recursos-admin" class="form-input" rows="4" placeholder="Até 20 instâncias\nWebhooks em tempo real"></textarea></div><button class="btn btn-verde" style="width:100%;justify-content:center;">Salvar plano</button></form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-novo-revendedor">
+    <div class="modal-box">
+      <button class="modal-fechar-btn" onclick="fecharModais()">&times;</button>
+      <h3 class="modal-titulo">Cadastrar Novo Revendedor White-Label</h3>
+      <p style="color: #64748b; font-size: 0.88rem; margin-bottom: 1.25rem;">Adicione uma nova agência parceira com domínio e marca isolados.</p>
+
+      <div class="form-grupo">
+        <label class="form-label">Nome da Empresa Parceira <span style="color: #dc2626;">*</span></label>
+        <input type="text" id="rev-nome-novo" class="form-input" placeholder="Ex: ZapMaster Pro" required>
+      </div>
+
+      <div class="form-grupo">
+        <label class="form-label">Domínio Customizado (CNAME)</label>
+        <input type="text" id="rev-dominio-novo" class="form-input" placeholder="api.zapmaster.com.br">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-grupo">
+          <label class="form-label">E-mail de Acesso da Revenda <span style="color: #dc2626;">*</span></label>
+          <input type="email" id="rev-email-novo" class="form-input" placeholder="admin@revenda.com.br" required>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Senha Inicial da Revenda</label>
+          <input type="password" id="rev-senha-novo" class="form-input" placeholder="Padrão: gerada auto">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-grupo">
+          <label class="form-label">Cor Primária</label>
+          <input type="color" id="rev-cor-novo" value="#10B981" style="width: 100%; height: 42px; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer;">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Limite Instâncias</label>
+          <input type="number" id="rev-limite-novo" class="form-input" value="150" min="10">
+        </div>
+      </div>
+
+      <button id="btn-submit-revendedor" class="btn btn-verde" style="width: 100%; justify-content: center; margin-top: 1.25rem;" onclick="confirmarNovoRevendedor()">
+        Cadastrar Revendedor
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVO CLIENTE (REVENDEDOR) -->
+  <div class="modal-overlay" id="modal-novo-cliente">
+    <div class="modal-box">
+      <button class="modal-fechar-btn" onclick="fecharModais()">&times;</button>
+      <h3 class="modal-titulo">Cadastrar Novo Cliente</h3>
+      <p style="color: #64748b; font-size: 0.88rem; margin-bottom: 1.25rem;">Cadastre uma empresa para gerenciar conexões do WhatsApp.</p>
+
+      <div class="form-grupo">
+        <label class="form-label">Nome da Empresa / Cliente <span style="color: #dc2626;">*</span></label>
+        <input type="text" id="cli-nome-novo" class="form-input" placeholder="Ex: Clínica Bem Estar" required>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-grupo">
+          <label class="form-label">E-mail de Acesso <span style="color: #dc2626;">*</span></label>
+          <input type="email" id="cli-email-novo" class="form-input" placeholder="contato@cliente.com.br" required>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Senha Inicial (Opcional)</label>
+          <input type="password" id="cli-senha-novo" class="form-input" placeholder="Padrão: gerada auto">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-grupo">
+          <label class="form-label">CNPJ ou CPF</label>
+          <input type="text" id="cli-doc-novo" class="form-input" placeholder="00.000.000/0001-00">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Limite de Instâncias</label>
+          <input type="number" id="cli-limite-novo" class="form-input" value="5" min="1">
+        </div>
+      </div>
+
+      <div class="form-grupo">
+        <label class="form-label">Plano Contratado</label>
+        <select id="cli-plano-novo" class="form-input">
+          <option value="basico">Básico (Até 5 instâncias • R$ 197/mês)</option>
+          <option value="profissional" selected>Profissional (Até 20 instâncias • R$ 297/mês)</option>
+          <option value="enterprise">Enterprise (Até 50 instâncias • R$ 497/mês)</option>
+        </select>
+      </div>
+
+      <button id="btn-submit-cliente" class="btn btn-verde" style="width: 100%; justify-content: center; margin-top: 1.25rem;" onclick="confirmarNovoCliente()">
+        Criar Acesso do Cliente
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: DETALHES DO PLANO -->
+  <div class="modal-overlay" id="modal-detalhes-plano">
+    <div class="modal-box" style="max-width: 520px;">
+      <button class="modal-fechar-btn" onclick="fecharModais()">&times;</button>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+        <h3 class="modal-titulo" style="margin-bottom: 0;">Plano Business Pro</h3>
+        <span class="badge-plano-destaque" style="font-size: 0.85rem;">ATIVO</span>
+      </div>
+      <p style="color: #64748b; font-size: 0.88rem; margin-bottom: 1.5rem;">Assinatura corporativa de alta performance para WhatsApp Multidevice.</p>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+          <span style="color: #64748b;">Instâncias Contratadas:</span>
+          <strong style="color: #0f172a;">Até 5 Conexões Simultâneas</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+          <span style="color: #64748b;">Franquia de Mensagens:</span>
+          <strong style="color: #0f172a;">100.000 disparos / mês</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+          <span style="color: #64748b;">Taxa de Entrega (SLA):</span>
+          <strong style="color: #059669;">99,98% de Garantia</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+          <span style="color: #64748b;">Suporte Dedicado:</span>
+          <strong style="color: #0f172a;">24/7 via WhatsApp e E-mail</strong>
+        </div>
+      </div>
+
+      <div class="lista-vantagens-plano" style="margin-bottom: 1.5rem;">
+        <div class="vantagem-item"><span class="check-circulo">✓</span> Áudio PTT Oficial Gravado na Hora (Microfone Verde)</div>
+        <div class="vantagem-item"><span class="check-circulo">✓</span> Suporte Nativo a DDI +55 e Fallback de Nono Dígito</div>
+        <div class="vantagem-item"><span class="check-circulo">✓</span> Webhooks em Tempo Real com Assinatura HMAC SHA-256</div>
+        <div class="vantagem-item"><span class="check-circulo">✓</span> Reconexão Automática Contínua de Sessões</div>
+      </div>
+
+      <button class="btn btn-verde" style="width: 100%; justify-content: center;" onclick="fecharModais()">
+        Entendido
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: WEBHOOK -->
+  <div class="modal-overlay" id="modal-webhook">
+    <div class="modal-box">
+      <button class="modal-fechar-btn" onclick="fecharModais()">&times;</button>
+      <h3 class="modal-titulo">Configuração de Webhook</h3>
+      <input type="hidden" id="wh-instancia-id">
+
+      <div class="form-grupo">
+        <label class="form-label">URL de Destino do Webhook</label>
+        <input type="text" id="wh-url" class="form-input" placeholder="https://seu-sistema.com/api/webhook/whatsapp">
+      </div>
+
+      <div class="form-grupo">
+        <label class="form-label">Token Secreto de Assinatura (HMAC SHA-256)</label>
+        <input type="text" id="wh-segredo" class="form-input" placeholder="Opcional: chave para validar procedência">
+        <small style="display:block;color:#64748b;font-size:.78rem;margin-top:.45rem;line-height:1.45;">Receba a assinatura no cabeçalho <code>X-WooHub-Signature-SHA256</code>. Ela é o HMAC-SHA256 do corpo JSON usando este segredo.</small>
+      </div>
+
+      <details style="margin-top:1rem;border:1px solid #e2e8f0;border-radius:10px;padding:.8rem .9rem;background:#f8fafc;">
+        <summary style="cursor:pointer;font-weight:700;color:#0f172a;font-size:.86rem;">Quais dados e eventos o webhook envia?</summary>
+        <div style="color:#475569;font-size:.78rem;line-height:1.55;margin-top:.7rem;">
+          <p style="margin:.25rem 0 .55rem;">Todos os eventos usam este envelope:</p>
+          <pre style="white-space:pre-wrap;background:#0f172a;color:#e2e8f0;border-radius:8px;padding:.7rem;font-size:.72rem;overflow:auto;">{
+  "instancia_id": "inst_...",
+  "nome_instancia": "Principal",
+  "evento": "mensagem_recebida",
+  "data_hora": "2026-11-04T15:00:00-03:00",
+  "dados": { "...": "conteúdo específico do evento" }
+}</pre>
+          <strong>Eventos disponíveis</strong>
+          <ul style="padding-left:1.2rem;margin:.35rem 0 0;">
+            <li><code>mensagem_recebida</code>: remetente, mensagem, tipo, texto e mídia.</li>
+            <li><code>status_envio</code>: mensagem, destinatário e status de entrega.</li>
+            <li><code>conexao</code>: estado, JID e número conectado.</li>
+            <li><code>presenca</code>, <code>qrcode</code>, <code>chamada_recebida</code>, <code>voto_enquete</code>, <code>reacao_mensagem</code> e <code>atualizacao_grupo</code>.</li>
+          </ul>
+          <p style="margin:.55rem 0 0;">O campo <code>dados</code> varia conforme o evento. Consulte os exemplos na documentação da API antes de mapear seu CRM, n8n ou sistema próprio.</p>
+        </div>
+      </details>
+
+      <button class="btn btn-verde" style="width: 100%; justify-content: center; margin-top: 1rem;" onclick="salvarWebhookInstancia()">
+        Salvar Webhook
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIGURAÇÕES AVANÇADAS & BLINDAGEM ANTI-BAN (PACOTE 4) -->
+  <div class="modal-overlay" id="modal-config-instancia">
+    <div class="modal-box" style="max-width: 560px;">
+      <button class="modal-fechar-btn" onclick="fecharModais()">&times;</button>
+      <h3 class="modal-titulo">Blindagem Anti-Ban &amp; Atendimento (Pacote 4)</h3>
+      <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1.25rem;">Configure Proxy Dedicado, Rejeição Automática de Chamadas VoIP, Leitura Automática e Presença Online.</p>
+      <input type="hidden" id="cfg-instancia-id">
+
+      <div class="form-grupo">
+        <label class="form-label">Proxy Dedicado da Instância (HTTP / SOCKS5 Brasil)</label>
+        <input type="text" id="cfg-proxy-url" class="form-input" placeholder="Ex: socks5://usuario:senha@177.54.10.20:1080 ou vazio para IP direto">
+        <small style="color: #64748b; font-size: 0.78rem;">Isola o IP de conexão desta instância para evitar banimento em cadeia.</small>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+        <label style="display: flex; align-items: center; gap: 8px; padding: 0.65rem; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 0.85rem;">
+          <input type="checkbox" id="cfg-rejeitar-chamadas" style="accent-color: #059669; width: 16px; height: 16px;">
+          <span><strong>Rejeitar Chamadas VoIP</strong></span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; padding: 0.65rem; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 0.85rem;">
+          <input type="checkbox" id="cfg-ignorar-grupos" style="accent-color: #059669; width: 16px; height: 16px;">
+          <span><strong>Ignorar Mensagens de Grupos</strong></span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; padding: 0.65rem; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 0.85rem;">
+          <input type="checkbox" id="cfg-leitura-automatica" style="accent-color: #059669; width: 16px; height: 16px;">
+          <span><strong>Leitura Automática (2 Checks Azuis)</strong></span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; padding: 0.65rem; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 0.85rem;">
+          <input type="checkbox" id="cfg-sempre-online" style="accent-color: #059669; width: 16px; height: 16px;">
+          <span><strong>Manter Sempre Online</strong></span>
+        </label>
+      </div>
+
+      <div class="form-grupo">
+        <label class="form-label">Mensagem Automática ao Rejeitar Chamada de Voz/Vídeo</label>
+        <textarea id="cfg-msg-chamada" class="form-input" rows="2" placeholder="Olá! Não atendemos ligações por este canal. Por favor, envie uma mensagem de texto ou áudio."></textarea>
+      </div>
+
+      <button class="btn btn-verde" style="width: 100%; justify-content: center; margin-top: 0.75rem;" onclick="salvarConfiguracoesInstancia()">
+        Salvar Configurações da Instância
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: ALTERAR SENHA -->
+  <div class="modal-overlay" id="modal-alterar-senha">
+    <div class="modal-box">
+      <button class="modal-fechar-btn" onclick="fecharModais()">&times;</button>
+      <h3 class="modal-titulo">Alterar Senha do Administrador</h3>
+      <div id="modal-senha-alerta" class="alerta-erro" style="display: none; margin-bottom: 1rem;"></div>
+      
+      <form onsubmit="confirmarAlterarSenha(event)">
+        <div class="form-grupo">
+          <label class="form-label">Senha Atual</label>
+          <input type="password" id="senha-atual" class="form-input" placeholder="••••••••" required>
+        </div>
+
+        <div class="form-grupo">
+          <label class="form-label">Nova Senha</label>
+          <input type="password" id="nova-senha" class="form-input" placeholder="Mínimo 4 caracteres" required>
+        </div>
+
+        <div class="form-grupo">
+          <label class="form-label">Confirme a Nova Senha</label>
+          <input type="password" id="confirma-nova-senha" class="form-input" placeholder="Repita a nova senha" required>
+        </div>
+
+        <button type="submit" class="btn btn-verde" style="width: 100%; justify-content: center; margin-top: 1rem;">
+          Atualizar Senha
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: EMITIR NOVA LICENÇA PORTAINER & GERAR STACK YAML -->
+  <div class="modal-overlay" id="modal-nova-licenca">
+    <div class="modal-box" style="max-width: 620px;">
+      <button class="modal-fechar-btn" onclick="fecharModais()">&times;</button>
+      <h3 class="modal-titulo">Emitir Licença Criptográfica (Stack Portainer)</h3>
+      <p style="color: #64748b; font-size: 0.86rem; margin-bottom: 1rem;">Gere uma chave assinada com Ed25519 para seu revendedor subir no Portainer com o próprio Supabase e MinIO dele. Sem licença ativa o container não sobe.</p>
+
+      <div class="form-grupo">
+        <label class="form-label">Nome da Revenda / Cliente</label>
+        <input type="text" id="lic-cliente-nome" class="form-input" placeholder="Ex: ConectaZap Cloud Brasil">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="form-grupo">
+          <label class="form-label">E-mail do Responsável</label>
+          <input type="email" id="lic-email" class="form-input" placeholder="admin@conectazap.com.br">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Domínio Autorizado da Stack</label>
+          <input type="text" id="lic-dominio" class="form-input" placeholder="api.conectazap.com.br">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+        <div class="form-grupo">
+          <label class="form-label">Plano</label>
+          <input type="text" id="lic-plano" class="form-input" value="Stack Portainer Pro">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Limite de Instâncias</label>
+          <input type="number" id="lic-limite" class="form-input" value="50" min="1" max="5000">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Validade (Dias)</label>
+          <input type="number" id="lic-dias" class="form-input" value="30" min="1" max="3650">
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-verde" style="width: 100%; justify-content: center; margin-top: 0.5rem;" onclick="confirmarCriarLicencaPortainer()">
+        Gerar Chave de Licença + Stack Portainer
+      </button>
+
+      <div id="box-licenca-gerada" style="display: none; margin-top: 1.25rem; background: #0f172a; color: #f8fafc; padding: 1rem; border-radius: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <span style="color: #10b981; font-weight: 700; font-size: 0.9rem;">✅ Licença Emitida! Copie a Stack para o Portainer:</span>
+          <button type="button" class="btn btn-verde" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;" onclick="copiarStackPortainerGerada()">Copiar Stack YAML</button>
+        </div>
+        <div style="font-family: monospace; font-size: 0.85rem; margin-bottom: 0.5rem; color: #38bdf8;">
+          Chave: <strong id="lic-chave-gerada-txt"></strong>
+        </div>
+        <textarea id="li
+
+        <button type="submit" class="btn btn-verde" style="width: 100%; justify-content: center; margin-top: 1rem;">
+          Atualizar Senha
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: EMITIR NOVA LICENÇA PORTAINER & GERAR STACK YAML -->
+  <div class="modal-overlay" id="modal-nova-licenca">
+    <div class="modal-box" style="max-width: 620px;">
+      <button class="modal-fechar-btn" onclick="fecharModais()">&times;</button>
+      <h3 class="modal-titulo">Emitir Licença Criptográfica (Stack Portainer)</h3>
+      <p style="color: #64748b; font-size: 0.86rem; margin-bottom: 1rem;">Gere uma chave assinada com Ed25519 para seu revendedor subir no Portainer com o próprio Supabase e MinIO dele. Sem licença ativa o container não sobe.</p>
+
+      <div class="form-grupo">
+        <label class="form-label">Nome da Revenda / Cliente</label>
+        <input type="text" id="lic-cliente-nome" class="form-input" placeholder="Ex: ConectaZap Cloud Brasil">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="form-grupo">
+          <label class="form-label">E-mail do Responsável</label>
+          <input type="email" id="lic-email" class="form-input" placeholder="admin@conectazap.com.br">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Domínio Autorizado da Stack</label>
+          <input type="text" id="lic-dominio" class="form-input" placeholder="api.conectazap.com.br">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+        <div class="form-grupo">
+          <label class="form-label">Plano</label>
+          <input type="text" id="lic-plano" class="form-input" value="Stack Portainer Pro">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Limite de Instâncias</label>
+          <input type="number" id="lic-limite" class="form-input" value="50" min="1" max="5000">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Validade (Dias)</label>
+          <input type="number" id="lic-dias" class="form-input" value="30" min="1" max="3650">
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-verde" style="width: 100%; justify-content: center; margin-top: 0.5rem;" onclick="confirmarCriarLicencaPortainer()">
+        Gerar Chave de Licença + Stack Portainer
+      </button>
+
+      <div id="box-licenca-gerada" style="display: none; margin-top: 1.25rem; background: #0f172a; color: #f8fafc; padding: 1rem; border-radius: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <span style="color: #10b981; font-weight: 700; font-size: 0.9rem;">✅ Licença Emitida! Copie a Stack para o Portainer:</span>
+          <button type="button" class="btn btn-verde" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;" onclick="copiarStackPortainerGerada()">Copiar Stack YAML</button>
+        </div>
+        <div style="font-family: monospace; font-size: 0.85rem; margin-bottom: 0.5rem; color: #38bdf8;">
+          Chave: <strong id="lic-chave-gerada-txt"></strong>
+        </div>
+        <textarea id="lic-yaml-gerado" readonly style="width: 100%; height: 180px; background: #020617; color: #cbd5e1; border: 1px solid #334155; border-radius: 6px; padding: 0.65rem; font-family: monospace; font-size: 0.76rem;"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIGURAÇÃO DE CAIXA DE INTEGRAÇÃO NATIVA -->
+  <div class="modal-overlay" id="modal-config-caixa">
+    <div class="modal-box" style="max-width: 620px;">
+      <button type="button" class="modal-fechar-btn" onclick="fecharModalConfigCaixa()">&times;</button>
+      <div style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.25rem;">
+        <div id="modal-caixa-icone" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #fff;"></div>
+        <div>
+          <h3 class="modal-titulo" id="modal-caixa-titulo" style="margin-bottom: 0.2rem; font-size: 1.2rem;">Configurar Caixa</h3>
+          <p id="modal-caixa-descricao" style="color: #64748b; font-size: 0.82rem; margin: 0;"></p>
+        </div>
+      </div>
+
+      <div id="modal-caixa-alerta" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem;"></div>
+
+      <form id="form-config-caixa" onsubmit="salvarConfiguracaoCaixa(event)">
+        <!-- Switch de Ativação Geral da Caixa -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 0.85rem 1rem; border-radius: 10px; margin-bottom: 1.25rem; border: 1px solid rgba(255,255,255,0.08);">
+          <div>
+            <strong style="font-size: 0.92rem; display: block; margin-bottom: 0.2rem;">Habilitar esta Conexão</strong>
+            <p style="font-size: 0.78rem; color: #64748b; margin: 0;">Ativa o processamento automático nesta instância</p>
+          </div>
+          <label class="switch-custom" style="position: relative; display: inline-block; width: 44px; height: 24px;">
+            <input type="checkbox" id="modal-caixa-ativo" style="opacity: 0; width: 0; height: 0;">
+            <span class="slider-custom" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .3s; border-radius: 24px;"></span>
+          </label>
+        </div>
+
+        <!-- Campos Dinâmicos da Caixa (injetados pelo JS) -->
+        <div id="modal-caixa-campos"></div>
+
+        <!-- Rodapé do Modal -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.25rem;">
+          <button type="button" class="btn btn-outline" id="btn-testar-caixa" onclick="testarConexaoCaixaAtiva()">
+            🧪 Testar Conexão
+          </button>
+          <div style="display: flex; gap: 0.75rem;">
+            <button type="button" class="btn btn-outline" onclick="fecharModalConfigCaixa()">Cancelar</button>
+            <button type="submit" class="btn btn-verde" id="btn-salvar-caixa">Salvar Caixa</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js?v=20261104v31"></script>
+</body>
+</html>

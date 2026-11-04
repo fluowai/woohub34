@@ -1,0 +1,56 @@
+version: "3.8"
+
+# Stack segura para importar no Portainer.
+# Preencha todas as variáveis no ambiente da Stack. Nunca grave senhas,
+# service-role keys ou tokens diretamente neste arquivo ou no GitHub.
+
+services:
+  woohub-api:
+    image: ghcr.io/fluowai/woohub34:${WOOHUB_VERSION:?Defina WOOHUB_VERSION}
+    restart: unless-stopped
+    environment:
+      AMBIENTE: production
+      PORTA: "8080"
+      TIPO_BANCO: postgres
+      URI_BANCO: ${URI_BANCO:?Informe o Supabase operacional da revenda}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Informe o administrador da revenda}
+      ADMIN_SENHA: ${ADMIN_SENHA:?Informe uma senha forte}
+      SEGREDO_JWT: ${SEGREDO_JWT:?Informe um segredo JWT forte}
+      CHAVE_MESTRE: ${CHAVE_MESTRE:?Informe a chave mestre}
+      CORS_ORIGENS: https://woohub2.wootech.com.br
+      URL_PUBLICA: https://woohub2.wootech.com.br
+      WOOHUB_DOMINIO_OFICIAL: woohub2.wootech.com.br
+      WOOHUB_LICENCA_CHAVE: ${WOOHUB_LICENCA_CHAVE:?Informe a licença}
+      WOOHUB_SERVIDOR_LICENCA: ${WOOHUB_SERVIDOR_LICENCA:?Informe o servidor central de licenças}
+      EXIGIR_LICENCA: "true"
+      STORAGE_DRIVER: s3
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:?Informe o MinIO da revenda}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?Informe o Access Key do MinIO}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?Informe o Secret Key do MinIO}
+      MINIO_BUCKET: ${MINIO_BUCKET:?Informe o bucket da revenda}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-true}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-}
+      SEED_DADOS_DEMO: "false"
+    volumes:
+      - woohub2_media:/app/armazenamento_midia
+    networks:
+      - woohub2_internal
+    deploy:
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=woohub2_proxy
+        - traefik.http.routers.woohub2.rule=Host(`woohub2.wootech.com.br`)
+        - traefik.http.routers.woohub2.entrypoints=websecure
+        - traefik.http.routers.woohub2.tls.certresolver=letsencryptresolver
+        - traefik.http.services.woohub2.loadbalancer.server.port=8080
+
+volumes:
+  woohub2_media:
+
+networks:
+  woohub2_internal:
+    driver: overlay
+  woohub2_proxy:
+    external: true

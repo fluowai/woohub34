@@ -1,0 +1,547 @@
+{
+	"info": {
+		"_postman_id": "woohub-api-brasil-collection-2026",
+		"name": "WooHub API - WhatsApp Gateway Brasil (White-Label)",
+		"description": "Coleção oficial de endpoints da WooHub API (baseada no whatsmeow) em Português do Brasil com suporte a White-label e revenda.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Status e Marca Própria",
+			"item": [
+				{
+					"name": "Verificar Status do Servidor",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "status"]
+						}
+					}
+				},
+				{
+					"name": "Obter Dados da Marca (White-Label)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/revenda/marca",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "revenda", "marca"]
+						}
+					}
+				},
+				{
+					"name": "Configurar Marca Própria",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome_empresa\": \"ZapVendas Pro\",\n  \"dominio_personalizado\": \"api.zapvendas.com.br\",\n  \"logo_url\": \"https://zapvendas.com.br/logo.png\",\n  \"cor_primaria\": \"#00C853\",\n  \"cor_secundaria\": \"#0F172A\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/revenda/configurar",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "revenda", "configurar"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Gestão de Instâncias",
+			"item": [
+				{
+					"name": "Listar Instâncias",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/instancia/listar",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "instancia", "listar"]
+						}
+					}
+				},
+				{
+					"name": "Criar Nova Instância",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nome\": \"Suporte Vendas São Paulo\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/instancia/criar",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "instancia", "criar"]
+						}
+					}
+				},
+				{
+					"name": "Conectar Instância (Iniciar Pareamento)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/instancia/{{instancia_id}}/conectar",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "instancia", "{{instancia_id}}", "conectar"]
+						}
+					}
+				},
+				{
+					"name": "Obter QR Code (Base64)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/instancia/{{instancia_id}}/qrcode",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "instancia", "{{instancia_id}}", "qrcode"]
+						}
+					}
+				},
+				{
+					"name": "Solicitar Código de Pareamento (Celular sem câmera)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"numero_telefone\": \"11987654321\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/instancia/{{instancia_id}}/codigo-pareamento",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "instancia", "{{instancia_id}}", "codigo-pareamento"]
+						}
+					}
+				},
+				{
+					"name": "Configurar Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"webhook_url\": \"https://meu-crm.com.br/webhook/whatsapp\",\n  \"webhook_eventos\": \"mensagem_recebida,status_envio,conexao\",\n  \"webhook_segredo\": \"meu_segredo_hmac_sha256\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/instancia/{{instancia_id}}/webhook",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "instancia", "{{instancia_id}}", "webhook"]
+						}
+					}
+				},
+				{
+					"name": "Desconectar Instância",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/instancia/{{instancia_id}}/desconectar",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "instancia", "{{instancia_id}}", "desconectar"]
+						}
+					}
+				},
+				{
+					"name": "Configurar Blindagem Anti-Ban, Proxy e Anti-Chamadas (Pacote 4)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"proxy_url\": \"\",\n  \"rejeitar_chamadas\": true,\n  \"mensagem_chamada_rejeitada\": \"Olá! Não atendemos ligações por este número. Envie mensagem de texto ou áudio.\",\n  \"ignorar_grupos\": false,\n  \"leitura_automatica\": true,\n  \"sempre_online\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/instancia/{{instancia_id}}/configuracoes",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "instancia", "{{instancia_id}}", "configuracoes"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Pacote 1: Mensageria Completa e Interativa",
+			"item": [
+				{
+					"name": "Enviar Texto (Quote, Menções, Link Preview e Timer)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"destinatario\": \"11987654321\",\n  \"mensagem\": \"Olá! Sua compra na WooHub foi aprovada com sucesso. 🚀\",\n  \"id_mensagem_citada\": \"\",\n  \"atraso_digitacao_ms\": 1200\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mensagem/texto",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mensagem", "texto"]
+						}
+					}
+				},
+				{
+					"name": "Enviar Enquete Interativa (Substituto Oficial de Botões)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"destinatario\": \"11987654321\",\n  \"pergunta\": \"Com qual setor você deseja falar?\",\n  \"opcoes\": [\"1. Financeiro / 2ª Via\", \"2. Suporte Técnico\", \"3. Comercial\"],\n  \"maximo_selecao\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mensagem/enquete",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mensagem", "enquete"]
+						}
+					}
+				},
+				{
+					"name": "Enviar Áudio Gravado na Hora (PTT Microfone Verde)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"destinatario\": \"11987654321\",\n  \"audio_base64\": \"GkXfo59ChoEBQveBAULygQ8...\",\n  \"gravar_na_hora\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mensagem/audio",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mensagem", "audio"]
+						}
+					}
+				},
+				{
+					"name": "Enviar Imagem (com Legenda / Visualização Única)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"destinatario\": \"11987654321\",\n  \"imagem_base64\": \"iVBORw0KGgoAAAANSUhEUgAAAAUA...\",\n  \"legenda\": \"Confira a nossa nova tabela de preços promocional!\",\n  \"unica_visao\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mensagem/imagem",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mensagem", "imagem"]
+						}
+					}
+				},
+				{
+					"name": "Enviar Documento (PDF / Boleto / XML / Planilha)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"destinatario\": \"11987654321\",\n  \"documento_base64\": \"JVBERi0xLjQKJeLjz9MK\",\n  \"nome_arquivo\": \"boleto_mensalidade.pdf\",\n  \"legenda\": \"Segue seu boleto atualizado em PDF.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mensagem/documento",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mensagem", "documento"]
+						}
+					}
+				},
+				{
+					"name": "Enviar Vídeo (MP4 / GIF / Nota de Vídeo Circular PTV)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"destinatario\": \"11987654321\",\n  \"video_base64\": \"AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDE=\",\n  \"legenda\": \"Demonstração em vídeo\",\n  \"nota_video\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mensagem/video",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mensagem", "video"]
+						}
+					}
+				},
+				{
+					"name": "Enviar Sticker / Figurinha WebP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"destinatario\": \"11987654321\",\n  \"sticker_base64\": \"UklGRh4AAABXRUJQVlA4TBEAAAAvAAAAAAfQ//73v/+BiOh/AAA=\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mensagem/sticker",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mensagem", "sticker"]
+						}
+					}
+				},
+				{
+					"name": "Enviar Localização GPS",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"destinatario\": \"11987654321\",\n  \"latitude\": -23.561414,\n  \"longitude\": -46.655881,\n  \"nome_local\": \"Sede WooHub Brasil\",\n  \"endereco\": \"Av. Paulista, 1000 - São Paulo/SP\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mensagem/localizacao",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mensagem", "localizacao"]
+						}
+					}
+				},
+				{
+					"name": "Enviar Cartão de Contato (vCard 3.0)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"destinatario\": \"11987654321\",\n  \"nome_contato\": \"Especialista Comercial WooHub\",\n  \"telefone\": \"11999998888\",\n  \"empresa\": \"WooHub SaaS\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mensagem/contato",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mensagem", "contato"]
+						}
+					}
+				},
+				{
+					"name": "Reagir a Mensagem com Emoji",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"destinatario\": \"11987654321\",\n  \"id_mensagem_alvo\": \"3EB0123456789ABCDEF\",\n  \"emoji\": \"❤️\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mensagem/reacao",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mensagem", "reacao"]
+						}
+					}
+				},
+				{
+					"name": "Editar Mensagem Enviada",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"destinatario\": \"11987654321\",\n  \"id_mensagem_alvo\": \"3EB0123456789ABCDEF\",\n  \"novo_texto\": \"Mensagem corrigida em tempo real!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mensagem/editar",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mensagem", "editar"]
+						}
+					}
+				},
+				{
+					"name": "Revogar / Apagar Mensagem Para Todos",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"destinatario\": \"11987654321\",\n  \"id_mensagem_alvo\": \"3EB0123456789ABCDEF\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mensagem/revogar",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mensagem", "revogar"]
+						}
+					}
+				},
+				{
+					"name": "Listar Logs de Mensagens",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/mensagem/logs",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mensagem", "logs"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Pacote 2: Validador BR, Presença, Leitura e Etiquetas",
+			"item": [
+				{
+					"name": "Validar Números em Lote (IsOnWhatsApp + 9º Dígito BR)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"numeros\": [\"(11) 98765-4321\", \"21998887766\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/contato/verificar",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "contato", "verificar"]
+						}
+					}
+				},
+				{
+					"name": "Enviar Presença (digitando / gravando_audio / online)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"destinatario\": \"11987654321\",\n  \"estado\": \"gravando_audio\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/chat/presenca",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "chat", "presenca"]
+						}
+					}
+				},
+				{
+					"name": "Marcar Mensagens Como Lidas (2 Checks Azuis)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"destinatario\": \"11987654321\",\n  \"ids_mensagens\": [\"3EB0123456\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/chat/marcar-lido",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "chat", "marcar-lido"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Pacote 3: Grupos, Menção Fantasma (@todos) e Status 24h",
+			"item": [
+				{
+					"name": "Menção Fantasma em Grupo (@todos Invisível)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grupo_jid\": \"120363025987654321@g.us\",\n  \"mensagem\": \"🚨 Estamos AO VIVO! Toque no link acima para entrar na aula.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/grupo/mencao-fantasma",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "grupo", "mencao-fantasma"]
+						}
+					}
+				},
+				{
+					"name": "Publicar Status / Stories 24h",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-api-key", "value": "{{chave_api}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tipo\": \"texto\",\n  \"texto\": \"Promoção Relâmpago nas próximas 24h! 🔥\",\n  \"cor_fundo\": \"#059669\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/status/publicar",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "status", "publicar"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "instancia_id",
+			"value": "inst_demo_brasil"
+		},
+		{
+			"key": "chave_api",
+			"value": "woo_br_demo_key"
+		}
+	]
+}

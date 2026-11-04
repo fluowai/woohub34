@@ -1,0 +1,25 @@
+services:
+  woohub-api:
+    build: .
+    container_name: woohub_api_brasil
+    restart: unless-stopped
+    ports:
+      - "${PORTA:-8080}:8080"
+    env_file:
+      - .env
+    environment:
+      - AMBIENTE=${AMBIENTE:-production}
+      - PORTA=8080
+      - TIPO_BANCO=${TIPO_BANCO:-postgres}
+      - URI_BANCO=${URI_BANCO}
+      - SEGREDO_JWT=${SEGREDO_JWT}
+      - CHAVE_MESTRE=${CHAVE_MESTRE}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@woohub.com.br}
+      - ADMIN_SENHA=${ADMIN_SENHA}
+      - SEED_DADOS_DEMO=${SEED_DADOS_DEMO:-false}
+      - CORS_ORIGENS=${CORS_ORIGENS}
+      - FUSO_HORARIO=${FUSO_HORARIO:-America/Sao_Paulo}
+      - LIMITE_PADRAO_INSTANCIAS=${LIMITE_PADRAO_INSTANCIAS:-100}
+      - DIRETORIO_MIDIA=/app/armazenamento_midia
+    volumes:
+      - ./armazenamento_midia:/app/armazenamento_midia

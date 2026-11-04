@@ -1,0 +1,38 @@
+# Binários e executáveis
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+woohub-api
+
+# Bancos de dados locais (SQLite)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Armazenamento local de mídias e temporários
+armazenamento_midia/
+tmp/
+temp/
+
+# Variáveis de ambiente e segredos locais
+.env
+.env.local
+.env.production
+
+# Testes e cobertura Go
+*.test
+*.out
+coverage.txt
+
+# IDEs e Sistema Operacional
+.idea/
+.vscode/
+.omx/
+.DS_Store
+Thumbs.db
+
