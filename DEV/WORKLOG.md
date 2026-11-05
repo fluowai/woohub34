@@ -1,5 +1,17 @@
 # Diário de Bordo (Worklog) - WooHub API
 
+## [2026-11-05] Correção da Aba Planos (Loop Infinito) e Implementação de Criação/Edição/Exclusão
+
+### Diagnóstico e Resoluções
+- **Correção do Erro `RangeError: Maximum call stack size exceeded`:**
+  - Na função `mostrarSubSecao` em [`web/app.js`](file:///c:/Users/paulo/whatsmeow/web/app.js), a condição `secao === 'planos'` continha uma chamada recursiva a si mesma (`mostrarSubSecao('planos')`), provocando estouro da pilha de execução.
+  - Corrigido para exibir a seção `#sub-planos`, atualizar o breadcrumb e invocar `carregarPlanos()`.
+- **Gestão Completa de Planos Comerciais (Criar, Editar, Ativar e Excluir):**
+  - Implementada a persistência e edição de qualquer plano (seja padrão ou customizado) através de `obterListaPlanos()` e `salvarListaPlanos()`.
+  - No modal de planos em [`web/index.html`](file:///c:/Users/paulo/whatsmeow/web/index.html), adicionados campos para franquia de mensagens, recursos, público-alvo, checkbox de plano ativo/destaque e botão de exclusão.
+  - Adicionado suporte a ativação dinâmica do plano diretamente nos cards com feedback visual em tempo real.
+  - Atualizado o cachebuster de assets para `v20261105v2`.
+
 ## [2026-11-05] Migração do Supabase Oficial e Criação da Stack Portainer (wooapi.wootech.com.br)
 
 ### Ações Executadas

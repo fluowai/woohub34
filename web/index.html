@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261105v1">
+  <link rel="stylesheet" href="style.css?v=20261105v2">
   <link rel="icon" type="image/svg+xml" id="fav-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%23059669'/%3E%3Ctext x='50%25' y='68%25' font-size='60' font-weight='800' fill='white' text-anchor='middle'%3EW%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -1684,10 +1684,55 @@ POST /api/v1/instancia/{id}/configuracoes
     </div>
   </div>
 
-  <!-- MODAL: NOVO REVENDEDOR (MEGA ADMIN) -->
+  <!-- MODAL: PLANO COMERCIAL (CRIAR E EDITAR) -->
   <div class="modal-overlay" id="modal-plano-admin">
-    <div class="modal-box"><button class="modal-fechar-btn" onclick="fecharModais()">&times;</button><h3 class="modal-titulo">Novo plano comercial</h3><p style="color:#64748b;font-size:.88rem;margin-bottom:1.25rem;">Defina preço, limite, público e recursos do plano.</p>
-      <form id="form-plano-admin" onsubmit="salvarPlanoAdmin(event)"><input type="hidden" id="plano-id-admin"><div class="form-grupo"><label class="form-label">Nome do plano *</label><input id="plano-nome-admin" class="form-input" required placeholder="Ex.: Revenda Pro"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;"><div class="form-grupo"><label class="form-label">Preço mensal *</label><input id="plano-preco-admin" class="form-input" required placeholder="R$ 397,00"></div><div class="form-grupo"><label class="form-label">Limite de instâncias *</label><input id="plano-limite-admin" type="number" min="1" class="form-input" required value="20"></div></div><div class="form-grupo"><label class="form-label">Disponível para</label><select id="plano-publico-admin" class="form-input"><option value="mega">Mega Admin</option><option value="revendedor">Revendedor</option><option value="ambos">Mega Admin e Revendedor</option></select></div><div class="form-grupo"><label class="form-label">Recursos (um por linha)</label><textarea id="plano-recursos-admin" class="form-input" rows="4" placeholder="Até 20 instâncias\nWebhooks em tempo real"></textarea></div><button class="btn btn-verde" style="width:100%;justify-content:center;">Salvar plano</button></form>
+    <div class="modal-box">
+      <button class="modal-fechar-btn" onclick="fecharModais()">&times;</button>
+      <h3 class="modal-titulo" id="modal-plano-titulo">Novo plano comercial</h3>
+      <p style="color:#64748b;font-size:.88rem;margin-bottom:1.25rem;">Defina preço, franquia de mensagens, limite de instâncias e recursos.</p>
+      <form id="form-plano-admin" onsubmit="salvarPlanoAdmin(event)">
+        <input type="hidden" id="plano-id-admin">
+        <div class="form-grupo">
+          <label class="form-label">Nome do plano *</label>
+          <input id="plano-nome-admin" class="form-input" required placeholder="Ex.: Revenda Pro">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-grupo">
+            <label class="form-label">Preço mensal *</label>
+            <input id="plano-preco-admin" class="form-input" required placeholder="R$ 397,00">
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Limite de instâncias *</label>
+            <input id="plano-limite-admin" type="number" min="1" class="form-input" required value="20">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-grupo">
+            <label class="form-label">Franquia de mensagens</label>
+            <input id="plano-franquia-admin" class="form-input" placeholder="Ex.: 100.000 disparos/mês">
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Disponível para</label>
+            <select id="plano-publico-admin" class="form-input">
+              <option value="mega">Mega Admin</option>
+              <option value="revendedor">Revendedor</option>
+              <option value="ambos">Mega Admin e Revendedor</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Recursos do plano (um por linha)</label>
+          <textarea id="plano-recursos-admin" class="form-input" rows="4" placeholder="Até 20 instâncias WhatsApp&#10;Pacote 1 e Pacote 2 liberados&#10;Webhooks em tempo real com HMAC"></textarea>
+        </div>
+        <div class="form-grupo" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1.25rem;">
+          <input type="checkbox" id="plano-destaque-admin" style="width:18px;height:18px;accent-color:#059669;cursor:pointer;">
+          <label for="plano-destaque-admin" style="font-size:0.88rem;color:#334155;cursor:pointer;font-weight:600;">Definir como Plano Ativo / Destaque</label>
+        </div>
+        <div style="display:flex;gap:.75rem;">
+          <button type="button" class="btn btn-outline" id="btn-excluir-plano" style="display:none;color:#ef4444;border-color:#ef4444;" onclick="excluirPlanoAdmin()">Excluir plano</button>
+          <button type="submit" class="btn btn-verde" style="flex:1;justify-content:center;">Salvar plano</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -2104,6 +2149,6 @@ POST /api/v1/instancia/{id}/configuracoes
     </div>
   </div>
 
-  <script src="app.js?v=20261105v1" charset="UTF-8"></script>
+  <script src="app.js?v=20261105v2" charset="UTF-8"></script>
 </body>
 </html>

@@ -528,7 +528,9 @@ function mostrarSubSecao(secao) {
     document.getElementById('sub-docs').style.display = 'block';
     document.getElementById('breadcrumb-pagina').innerText = 'Documentação API';
   } else if (secao === 'planos') {
-    mostrarSubSecao('planos');
+    document.getElementById('sub-planos').style.display = 'block';
+    document.getElementById('breadcrumb-pagina').innerText = 'Planos e Assinaturas';
+    carregarPlanos();
   } else if (secao === 'financeiro') {
     mostrarNotificacaoToast('Módulo Financeiro: Fluxo de caixa de revendas e cobranças via PIX atualizado.', 'sucesso');
     selecionarVisaoTier(visaoAtualTier, 'visao-geral');
@@ -2360,72 +2362,83 @@ async function salvarInfraestruturaRevenda() {
 // ============================================================================
 // CARREGAR PLANOS E ASSINATURAS (B2B SAAS TIER 01, 02 E 03)
 // ============================================================================
+const CATALOGO_PLANOS_PADRAO = [
+  {
+    id: 'basico',
+    nome: 'Starter / Básico',
+    preco_mensal: 'R$ 197,00',
+    limite_instancias: 5,
+    franquia_mensagens: '30.000 disparos/mês',
+    publico: 'revendedor',
+    destaque: false,
+    recursos: [
+      'Até 5 Instâncias WhatsApp Simultâneas',
+      'Pacote 1: Texto, Áudio PTT Microfone Verde, Vídeo, PDF e Enquetes',
+      'Pacote 2: Validador 9º Dígito BR + Download Automático de Mídias',
+      'Webhooks em Tempo Real com Assinatura HMAC SHA-256'
+    ]
+  },
+  {
+    id: 'profissional',
+    nome: 'Business Pro',
+    preco_mensal: 'R$ 297,00',
+    limite_instancias: 20,
+    franquia_mensagens: '100.000 disparos/mês',
+    publico: 'ambos',
+    destaque: true,
+    recursos: [
+      'Até 20 Instâncias WhatsApp Simultâneas',
+      'Todos os recursos do Pacote 1 e Pacote 2 liberados',
+      'Pacote 3: Grupos, Menção Fantasma (@todos) e Status 24h',
+      'Pacote 4: Blindagem Anti-Ban, Proxy SOCKS5/HTTP e Anti-Chamadas VoIP',
+      'Etiquetas WhatsApp Business e Simulação Humana'
+    ]
+  },
+  {
+    id: 'enterprise',
+    nome: 'Enterprise White-Label & Stack',
+    preco_mensal: 'R$ 497,00',
+    limite_instancias: 150,
+    franquia_mensagens: 'Disparos Ilimitados',
+    publico: 'mega',
+    destaque: false,
+    recursos: [
+      'Até 150 Instâncias WhatsApp + Subcontas de Clientes',
+      'Painel 100% White-Label com Domínio Próprio (CNAME) e Cores',
+      'Infraestrutura Isolada Opcional (BYO Supabase PostgreSQL + MinIO S3)',
+      'Deploy Dedicado via Stack Portainer com SLA 99,98%'
+    ]
+  }
+];
+
+function obterListaPlanos() {
+  const salvos = localStorage.getItem('woohub_planos_catalogo');
+  if (salvos) {
+    try {
+      const parsed = JSON.parse(salvos);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch (e) {
+      console.warn('Erro ao ler catálogo local de planos:', e);
+    }
+  }
+  localStorage.setItem('woohub_planos_catalogo', JSON.stringify(CATALOGO_PLANOS_PADRAO));
+  return [...CATALOGO_PLANOS_PADRAO];
+}
+
+function salvarListaPlanos(lista) {
+  localStorage.setItem('woohub_planos_catalogo', JSON.stringify(lista));
+}
+
 async function carregarPlanos() {
   const grid = document.getElementById('grid-planos-assinaturas');
   if (!grid) return;
 
-  let planos = [
-    {
-      id: 'basico',
-      nome: 'Starter / Básico',
-      preco_mensal: 'R$ 197,00',
-      limite_instancias: 5,
-      franquia_mensagens: '30.000 disparos/mês',
-      destaque: false,
-      recursos: [
-        'Até 5 Instâncias WhatsApp Simultâneas',
-        'Pacote 1: Texto, Áudio PTT Microfone Verde, Vídeo, PDF e Enquetes',
-        'Pacote 2: Validador 9º Dígito BR + Download Automático de Mídias',
-        'Webhooks em Tempo Real com Assinatura HMAC SHA-256'
-      ]
-    },
-    {
-      id: 'profissional',
-      nome: 'Business Pro',
-      preco_mensal: 'R$ 297,00',
-      limite_instancias: 20,
-      franquia_mensagens: '100.000 disparos/mês',
-      destaque: true,
-      recursos: [
-        'Até 20 Instâncias WhatsApp Simultâneas',
-        'Todos os recursos do Pacote 1 e Pacote 2 liberados',
-        'Pacote 3: Grupos, Menção Fantasma (@todos) e Status 24h',
-        'Pacote 4: Blindagem Anti-Ban, Proxy SOCKS5/HTTP e Anti-Chamadas VoIP',
-        'Etiquetas WhatsApp Business e Simulação Humana'
-      ]
-    },
-    {
-      id: 'enterprise',
-      nome: 'Enterprise White-Label & Stack',
-      preco_mensal: 'R$ 497,00',
-      limite_instancias: 150,
-      franquia_mensagens: 'Disparos Ilimitados',
-      destaque: false,
-      recursos: [
-        'Até 150 Instâncias WhatsApp + Subcontas de Clientes',
-        'Painel 100% White-Label com Domínio Próprio (CNAME) e Cores',
-        'Infraestrutura Isolada Opcional (BYO Supabase PostgreSQL + MinIO S3)',
-        'Deploy Dedicado via Stack Portainer com SLA 99,98%'
-      ]
-    }
-  ];
-  const planosLocais = JSON.parse(localStorage.getItem('woohub_planos_customizados') || '[]');
-  planos = planos.concat(planosLocais);
-
-  try {
-    const res = await fetchAutenticado('/api/v1/planos/listar');
-    const dados = await res.json();
-    if (dados.sucesso && dados.dados && Array.isArray(dados.dados.planos)) {
-      planos = dados.dados.planos;
-    }
-  } catch (err) {
-    console.warn('Usando catálogo local de planos:', err);
-  }
-
+  const planos = obterListaPlanos();
   const emUso = instanciasCache ? instanciasCache.length : 0;
 
   grid.innerHTML = planos.map(p => {
     const isDestaque = !!p.destaque;
+    const franquiaTexto = p.franquia_mensagens || 'Mensagens Ilimitadas';
     const recursosHTML = (p.recursos || []).map(r => `
       <div class="vantagem-item" style="margin-bottom: 0.45rem; font-size: 0.85rem;">
         <span class="check-circulo">&#10003;</span> ${escaparHTML(r)}
@@ -2433,28 +2446,35 @@ async function carregarPlanos() {
     `).join('');
 
     return `
-      <div class="card-dashboard" style="border: ${isDestaque ? '2px solid #059669' : '1px solid #e2e8f0'}; position: relative; display: flex; flex-direction: column; justify-content: space-between;">
+      <div class="card-dashboard" style="border: ${isDestaque ? '2px solid #059669' : '1px solid #e2e8f0'}; position: relative; display: flex; flex-direction: column; justify-content: space-between; border-radius: 12px; background: #fff; padding: 1.5rem;">
         <div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a;">${escaparHTML(p.nome)}</h3>
-            ${isDestaque ? '<span class="badge-plano-destaque">PLANO ATIVO</span>' : '<span class="badge-plano azul">Disponível</span>'}
+            <h3 style="font-size: 1.18rem; font-weight: 800; color: #0f172a; margin: 0;">${escaparHTML(p.nome)}</h3>
+            ${isDestaque ? '<span class="badge-plano-destaque">PLANO ATIVO</span>' : '<span class="badge-plano azul" style="cursor:pointer;" onclick="selecionarPlanoAtivo(\'' + escaparHTML(p.id) + '\')">Disponível</span>'}
           </div>
           <div style="font-size: 1.85rem; font-weight: 800; color: #059669; margin: 0.5rem 0;">
             ${escaparHTML(p.preco_mensal)} <span style="font-size: 0.85rem; color: #64748b; font-weight: 500;">/ mês</span>
           </div>
           <p style="font-size: 0.84rem; color: #64748b; margin-bottom: 1rem;">
-            Franquia: <strong>${escaparHTML(p.franquia_mensagens)}</strong> &bull; Até <strong>${Number(p.limite_instancias)} instâncias</strong>
+            Franquia: <strong>${escaparHTML(franquiaTexto)}</strong> &bull; Até <strong>${Number(p.limite_instancias) || 1} instâncias</strong>
           </p>
           ${isDestaque ? `
             <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.65rem 0.85rem; margin-bottom: 1rem; font-size: 0.82rem; color: #166534;">
-              Consumo atual: <strong>${emUso} de ${Number(p.limite_instancias)} instâncias</strong> em uso
+              Consumo atual: <strong>${emUso} de ${Number(p.limite_instancias) || 1} instâncias</strong> em uso
             </div>
           ` : ''}
           <div class="lista-vantagens-plano" style="margin-bottom: 1.25rem;">
             ${recursosHTML}
           </div>
         </div>
-        <div style="display:flex;gap:.5rem;"><button class="btn btn-outline" style="flex:1;justify-content:center;" onclick="editarPlano('${escaparHTML(p.id)}')">Editar</button><button class="btn ${isDestaque ? 'btn-verde' : 'btn-outline'}" style="flex:1;justify-content:center;" onclick="abrirModalPlanoDetalhes()">${isDestaque ? 'Ver detalhes' : 'Selecionar'}</button></div>
+        <div style="display:flex;gap:.5rem;margin-top:1rem;">
+          <button class="btn btn-outline" style="flex:1;justify-content:center;" onclick="editarPlano('${escaparHTML(p.id)}')">
+            <span>&#9998;</span> Editar
+          </button>
+          <button class="btn ${isDestaque ? 'btn-verde' : 'btn-outline'}" style="flex:1;justify-content:center;" onclick="selecionarPlanoAtivo('${escaparHTML(p.id)}')">
+            ${isDestaque ? '&#10003; Ativo' : 'Ativar Plano'}
+          </button>
+        </div>
       </div>
     `;
   }).join('');
@@ -2462,33 +2482,110 @@ async function carregarPlanos() {
 
 function abrirModalNovoPlano() {
   planoEmEdicao = null;
-  document.getElementById('form-plano-admin').reset();
+  const form = document.getElementById('form-plano-admin');
+  if (form) form.reset();
   document.getElementById('plano-id-admin').value = '';
+  const titulo = document.getElementById('modal-plano-titulo');
+  if (titulo) titulo.innerText = 'Novo plano comercial';
+  const btnExcluir = document.getElementById('btn-excluir-plano');
+  if (btnExcluir) btnExcluir.style.display = 'none';
+  const checkDestaque = document.getElementById('plano-destaque-admin');
+  if (checkDestaque) checkDestaque.checked = false;
   document.getElementById('modal-plano-admin').classList.add('aberto');
 }
 
 function editarPlano(id) {
-  const planos = JSON.parse(localStorage.getItem('woohub_planos_customizados') || '[]');
+  const planos = obterListaPlanos();
   const plano = planos.find(item => item.id === id);
-  if (!plano) { mostrarNotificacaoToast('Planos padrão são administrados pelo catálogo da plataforma.', 'aviso'); return; }
+  if (!plano) {
+    mostrarNotificacaoToast('Plano não localizado no catálogo.', 'erro');
+    return;
+  }
   planoEmEdicao = plano;
   document.getElementById('plano-id-admin').value = plano.id;
   document.getElementById('plano-nome-admin').value = plano.nome || '';
   document.getElementById('plano-preco-admin').value = plano.preco_mensal || '';
   document.getElementById('plano-limite-admin').value = plano.limite_instancias || 5;
-  document.getElementById('plano-publico-admin').value = plano.publico || 'revendedor';
+  const inputFranquia = document.getElementById('plano-franquia-admin');
+  if (inputFranquia) inputFranquia.value = plano.franquia_mensagens || '';
+  const selPublico = document.getElementById('plano-publico-admin');
+  if (selPublico) selPublico.value = plano.publico || 'revendedor';
   document.getElementById('plano-recursos-admin').value = (plano.recursos || []).join('\n');
+  const checkDestaque = document.getElementById('plano-destaque-admin');
+  if (checkDestaque) checkDestaque.checked = !!plano.destaque;
+
+  const titulo = document.getElementById('modal-plano-titulo');
+  if (titulo) titulo.innerText = `Editar Plano: ${plano.nome}`;
+  const btnExcluir = document.getElementById('btn-excluir-plano');
+  if (btnExcluir) btnExcluir.style.display = 'inline-flex';
+
   document.getElementById('modal-plano-admin').classList.add('aberto');
 }
 
 function salvarPlanoAdmin(event) {
   event.preventDefault();
-  const planos = JSON.parse(localStorage.getItem('woohub_planos_customizados') || '[]');
-  const plano = { id: document.getElementById('plano-id-admin').value || `custom-${Date.now()}`, nome: document.getElementById('plano-nome-admin').value.trim(), preco_mensal: document.getElementById('plano-preco-admin').value.trim(), limite_instancias: Number(document.getElementById('plano-limite-admin').value) || 1, publico: document.getElementById('plano-publico-admin').value, recursos: document.getElementById('plano-recursos-admin').value.split('\n').map(item => item.trim()).filter(Boolean), destaque: false };
-  const index = planos.findIndex(item => item.id === plano.id);
-  if (index >= 0) planos[index] = plano; else planos.push(plano);
-  localStorage.setItem('woohub_planos_customizados', JSON.stringify(planos));
-  fecharModais(); carregarPlanos(); mostrarNotificacaoToast('Plano salvo com sucesso.', 'sucesso');
+  const planos = obterListaPlanos();
+  const id = document.getElementById('plano-id-admin').value.trim();
+  const nome = document.getElementById('plano-nome-admin').value.trim();
+  const preco = document.getElementById('plano-preco-admin').value.trim();
+  const limite = Number(document.getElementById('plano-limite-admin').value) || 1;
+  const inputFranquia = document.getElementById('plano-franquia-admin');
+  const franquia = inputFranquia ? inputFranquia.value.trim() : 'Ilimitado';
+  const selPublico = document.getElementById('plano-publico-admin');
+  const publico = selPublico ? selPublico.value : 'revendedor';
+  const recursos = document.getElementById('plano-recursos-admin').value.split('\n').map(r => r.trim()).filter(Boolean);
+  const checkDestaque = document.getElementById('plano-destaque-admin');
+  const destaque = checkDestaque ? checkDestaque.checked : false;
+
+  const novoOuEditado = {
+    id: id || `plano_${Date.now()}`,
+    nome,
+    preco_mensal: preco.startsWith('R$') ? preco : `R$ ${preco}`,
+    limite_instancias: limite,
+    franquia_mensagens: franquia || `${limite * 10000} disparos/mês`,
+    publico,
+    recursos: recursos.length > 0 ? recursos : ['Disparos e Webhooks em tempo real'],
+    destaque
+  };
+
+  if (destaque) {
+    planos.forEach(p => p.destaque = false);
+  }
+
+  const idx = planos.findIndex(p => p.id === novoOuEditado.id);
+  if (idx >= 0) {
+    planos[idx] = novoOuEditado;
+  } else {
+    planos.push(novoOuEditado);
+  }
+
+  salvarListaPlanos(planos);
+  fecharModais();
+  carregarPlanos();
+  mostrarNotificacaoToast(`Plano "${nome}" salvo com sucesso!`, 'sucesso');
+}
+
+function excluirPlanoAdmin() {
+  const id = document.getElementById('plano-id-admin').value.trim();
+  if (!id) return;
+  if (!confirm('Deseja realmente excluir este plano comercial do catálogo?')) return;
+
+  let planos = obterListaPlanos();
+  planos = planos.filter(p => p.id !== id);
+  salvarListaPlanos(planos);
+  fecharModais();
+  carregarPlanos();
+  mostrarNotificacaoToast('Plano excluído com sucesso.', 'sucesso');
+}
+
+function selecionarPlanoAtivo(id) {
+  const planos = obterListaPlanos();
+  planos.forEach(p => {
+    p.destaque = (p.id === id);
+  });
+  salvarListaPlanos(planos);
+  carregarPlanos();
+  mostrarNotificacaoToast('Plano ativado com sucesso!', 'sucesso');
 }
 
 // ============================================================================
