@@ -338,7 +338,7 @@ func HandlerWebhookReversoChatwoot(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err := integracoes.InstanciaGerenciador.ProcessarWebhookReversoChatwoot(r.Context(), instanciaID, corpo)
+	err = integracoes.InstanciaGerenciador.ProcessarWebhookReversoChatwoot(r.Context(), instanciaID, corpo)
 	if err != nil {
 		responderErro(w, http.StatusInternalServerError, "Falha ao despachar para WhatsApp: "+err.Error())
 		return
