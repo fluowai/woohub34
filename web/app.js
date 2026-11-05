@@ -1583,7 +1583,37 @@ function alternarTipoEnvioSimulador() {
   } else {
     grupoTexto.style.display = 'block';
     if (labelMsg && inputMsg) {
-      if (tipo === 'enquete') {
+      if (tipo === 'botoes_interativos') {
+        labelMsg.innerText = 'Texto da Mensagem com Botões';
+        inputMsg.value = 'Escolha uma das opções abaixo para continuar seu atendimento:';
+      } else if (tipo === 'botoes_interativos') {
+      endpoint = '/api/v1/mensagem/interativa';
+      body = {
+        instancia_id: instId,
+        destinatario: telefone,
+        titulo: 'Atendimento WooHub',
+        corpo: mensagem || 'Escolha uma das opções abaixo para prosseguir:',
+        rodape: 'WooHub API • Gateway Oficial',
+        botoes: [
+          {
+            tipo: 'url',
+            texto: '🔗 Acessar Painel',
+            valor: 'https://woohub.com.br'
+          },
+          {
+            tipo: 'copiar',
+            texto: '📋 Copiar Código Pix',
+            valor: '00020126580014br.gov.bcb.pix0136woohub-teste-pix520400005303986540510.005802BR5910WooHub API6009Sao Paulo62070503***6304ABCD'
+          },
+          {
+            tipo: 'resposta',
+            texto: '💬 Falar com Suporte',
+            id: 'btn_suporte_1'
+          }
+        ],
+        simulacao: simulacao
+      };
+    } else if (tipo === 'enquete') {
         labelMsg.innerText = 'Pergunta da Enquete Interativa';
         inputMsg.value = 'Com qual setor você deseja falar agora?';
       } else if (tipo === 'documento') {
@@ -1663,6 +1693,36 @@ async function dispararMensagemTeste() {
         destinatario: telefone,
         audio_base64: 'GkXfo59ChoEBQveBAULygQ8=',
         gravar_na_hora: true,
+        simulacao: simulacao
+      };
+    } else if (tipo === 'botoes_interativos') {
+        labelMsg.innerText = 'Texto da Mensagem com Botões';
+        inputMsg.value = 'Escolha uma das opções abaixo para continuar seu atendimento:';
+      } else if (tipo === 'botoes_interativos') {
+      endpoint = '/api/v1/mensagem/interativa';
+      body = {
+        instancia_id: instId,
+        destinatario: telefone,
+        titulo: 'Atendimento WooHub',
+        corpo: mensagem || 'Escolha uma das opções abaixo para prosseguir:',
+        rodape: 'WooHub API • Gateway Oficial',
+        botoes: [
+          {
+            tipo: 'url',
+            texto: '🔗 Acessar Painel',
+            valor: 'https://woohub.com.br'
+          },
+          {
+            tipo: 'copiar',
+            texto: '📋 Copiar Código Pix',
+            valor: '00020126580014br.gov.bcb.pix0136woohub-teste-pix520400005303986540510.005802BR5910WooHub API6009Sao Paulo62070503***6304ABCD'
+          },
+          {
+            tipo: 'resposta',
+            texto: '💬 Falar com Suporte',
+            id: 'btn_suporte_1'
+          }
+        ],
         simulacao: simulacao
       };
     } else if (tipo === 'enquete') {

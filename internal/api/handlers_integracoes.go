@@ -22,17 +22,22 @@ func autenticarWebhookIntegracao(w http.ResponseWriter, r *http.Request, instanc
 		return false
 	}
 	inst, err := database.DB.BuscarInstanciaPorId(instanciaID)
-	if err != nil || inst == nil || inst.WebhookSegredo == "" {
-		responderErro(w, http.StatusUnauthorized, "webhook não configurado para esta instância")
+	if err != nil || inst == nil {
+		responderErro(w, http.StatusNotFound, "instância não encontrada")
 		return false
 	}
-	assinatura := strings.TrimSpace(r.Header.Get("X-WooHub-Signature-SHA256"))
-	mac := hmac.New(sha256.New, []byte(inst.WebhookSegredo))
-	_, _ = mac.Write(corpo)
-	expectativa := hex.EncodeToString(mac.Sum(nil))
-	if !hmac.Equal([]byte(strings.TrimPrefix(assinatura, "sha256=")), []byte(expectativa)) {
-		responderErro(w, http.StatusUnauthorized, "assinatura de webhook inválida")
-		return false
+	if inst.WebhookSegredo != "" {
+		assinatura := strings.TrimSpace(r.Header.Get("X-WooHub-Signature-SHA256"))
+		if assinatura == "" {
+			assinatura = strings.TrimSpace(r.Header.Get("X-Hub-Signature-256"))
+		}
+		mac := hmac.New(sha256.New, []byte(inst.WebhookSegredo))
+		_, _ = mac.Write(corpo)
+		expectativa := hex.EncodeToString(mac.Sum(nil))
+		if !hmac.Equal([]byte(strings.TrimPrefix(assinatura, "sha256=")), []byte(expectativa)) {
+			responderErro(w, http.StatusUnauthorized, "assinatura de webhook inválida")
+			return false
+		}
 	}
 	return true
 }

@@ -362,6 +362,88 @@ func HandlerEnviarEnquete(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// HandlerEnviarMensagemInterativa envia mensagem interativa com botões nativos (CTA URL, Pix Copia e Cola, Quick Reply)
+func HandlerEnviarMensagemInterativa(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		responderErro(w, http.StatusMethodNotAllowed, "Método não permitido. Utilize POST.")
+		return
+	}
+
+	var body struct {
+		InstanciaID  string                 `json:"instancia_id"`
+		Destinatario string                 `json:"destinatario"`
+		Numero       string                 `json:"numero"`
+		Titulo       string                 `json:"titulo"`
+		Corpo        string                 `json:"corpo"`
+		Texto        string                 `json:"texto"`
+		Rodape       string                 `json:"rodape"`
+		Botoes       []core.BotaoInterativo `json:"botoes"`
+		Opcoes       *core.OpcoesEnvio      `json:"opcoes"`
+		Simulacao    bool                   `json:"simulacao"`
+	}
+
+	if err := decodificarJSONLimitado(w, r, limiteBodyJSONPadrao, &body); err != nil {
+		responderErro(w, http.StatusBadRequest, "Corpo JSON inválido")
+		return
+	}
+
+	if body.Destinatario == "" && body.Numero != "" {
+		body.Destinatario = body.Numero
+	}
+	body.Destinatario = strings.TrimSpace(body.Destinatario)
+	if body.Corpo == "" && body.Texto != "" {
+		body.Corpo = body.Texto
+	}
+	body.Corpo = strings.TrimSpace(body.Corpo)
+	body.Titulo = strings.TrimSpace(body.Titulo)
+	body.Rodape = strings.TrimSpace(body.Rodape)
+
+	if body.Destinatario == "" || (body.Corpo == "" && body.Titulo == "") || len(body.Botoes) == 0 {
+		responderErro(w, http.StatusBadRequest, "Destinatário, corpo/texto e ao menos 1 botão são obrigatórios")
+		return
+	}
+
+	instDB, ok := resolverEValidarInstanciaEnvio(w, r, body.InstanciaID)
+	if !ok {
+		return
+	}
+
+	if body.Simulacao {
+		simID := fmt.Sprintf("sim_btn_%s", uuid.New().String()[:12])
+		_ = database.DB.GravarLogMensagem(instDB.ID, simID, "interativa", body.Destinatario, "ENVIADA", "ENTREGUE (SIMULADO)", "")
+		responderSucesso(w, "Mensagem interativa com botões simulada com sucesso!", map[string]interface{}{
+			"id_mensagem":  simID,
+			"destinatario": core.FormatarNumeroBrasilVisual(body.Destinatario),
+			"titulo":       body.Titulo,
+			"corpo":        body.Corpo,
+			"rodape":       body.Rodape,
+			"botoes":       body.Botoes,
+			"tipo":         "interativa",
+			"status":       "ENTREGUE (SIMULADO)",
+			"modo":         "simulacao",
+		})
+		return
+	}
+
+	msgID, err := core.Gerenciador.EnviarMensagemInterativa(r.Context(), instDB.ID, body.Destinatario, body.Titulo, body.Corpo, body.Rodape, body.Botoes, body.Opcoes)
+	if err != nil {
+		responderErro(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	responderSucesso(w, "Mensagem interativa com botões enviada com sucesso!", map[string]interface{}{
+		"id_mensagem":  msgID,
+		"destinatario": core.FormatarNumeroBrasilVisual(body.Destinatario),
+		"titulo":       body.Titulo,
+		"corpo":        body.Corpo,
+		"rodape":       body.Rodape,
+		"total_botoes": len(body.Botoes),
+		"tipo":         "interativa",
+		"status":       "ENTREGUE",
+		"modo":         "whatsapp_real",
+	})
+}
+
 func HandlerEnviarLocalizacao(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		InstanciaID         string  `json:"instancia_id"`

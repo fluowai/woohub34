@@ -94,7 +94,9 @@ func ConfigurarRotas(caminhoWeb string) http.Handler {
 	mux.HandleFunc("/api/v1/mensagem/video", ExigirAutenticacao(HandlerEnviarVideo))
 	mux.HandleFunc("/api/v1/mensagem/documento", ExigirAutenticacao(HandlerEnviarDocumento))
 	mux.HandleFunc("/api/v1/mensagem/sticker", ExigirAutenticacao(HandlerEnviarSticker))
-	mux.HandleFunc("/api/v1/mensagem/enquete", ExigirAutenticacao(HandlerEnviarEnquete))
+		mux.HandleFunc("/api/v1/mensagem/enquete", ExigirAutenticacao(HandlerEnviarEnquete))
+	mux.HandleFunc("/api/v1/mensagem/interativa", ExigirAutenticacao(HandlerEnviarMensagemInterativa))
+	mux.HandleFunc("/api/v1/mensagem/botoes", ExigirAutenticacao(HandlerEnviarMensagemInterativa))
 	mux.HandleFunc("/api/v1/mensagem/localizacao", ExigirAutenticacao(HandlerEnviarLocalizacao))
 	mux.HandleFunc("/api/v1/mensagem/contato", ExigirAutenticacao(HandlerEnviarContato))
 	mux.HandleFunc("/api/v1/mensagem/reacao", ExigirAutenticacao(HandlerEnviarReacao))
@@ -145,6 +147,15 @@ func ConfigurarRotas(caminhoWeb string) http.Handler {
 		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
+
+		if strings.HasSuffix(r.URL.Path, ".js") {
+			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+		} else if strings.HasSuffix(r.URL.Path, ".css") {
+			w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		} else if strings.HasSuffix(r.URL.Path, ".html") || r.URL.Path == "/" {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		}
+
 		fs.ServeHTTP(w, r)
 	})
 

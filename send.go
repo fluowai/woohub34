@@ -1029,6 +1029,8 @@ func getButtonTypeFromMessage(msg *waE2E.Message) string {
 		return "list_response"
 	case msg.InteractiveResponseMessage != nil:
 		return "interactive_response"
+	case msg.InteractiveMessage != nil:
+		return "native_flow"
 	default:
 		return ""
 	}
@@ -1048,6 +1050,10 @@ func getButtonAttributes(msg *waE2E.Message) waBinary.Attrs {
 		return waBinary.Attrs{
 			"v":    "2",
 			"type": strings.ToLower(waE2E.ListMessage_ListType_name[int32(msg.ListMessage.GetListType())]),
+		}
+	case msg.InteractiveMessage != nil:
+		return waBinary.Attrs{
+			"v": "2",
 		}
 	default:
 		return waBinary.Attrs{}

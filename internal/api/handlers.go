@@ -188,12 +188,22 @@ func ExigirAutenticacao(proximo http.HandlerFunc) http.HandlerFunc {
 			responderErro(w, http.StatusUnauthorized, "Sessão expirada ou não autenticada. Faça login para continuar.")
 			return
 		}
+		// Regras estritas de RBAC têm precedência sobre status de infraestrutura (403 Forbidden antes de 412)
+		if strings.HasPrefix(r.URL.Path, "/api/v1/revendedor/") && cli.Papel != database.PapelSuperAdmin {
+			responderErro(w, http.StatusForbidden, "Apenas o Mega Admin tem permissão para acessar recursos de revendedores")
+			return
+		}
+		if (r.URL.Path == "/api/v1/cliente/listar" || r.URL.Path == "/api/v1/cliente/criar") && cli.Papel == database.PapelCliente {
+			responderErro(w, http.StatusForbidden, "Clientes finais não possuem permissão para gerenciar a carteira de clientes")
+			return
+		}
+
 		// O control plane continua acessível ao Super Admin para configurar a
 		// infraestrutura. Todos os demais usuários só podem operar quando a
 		// revenda possui Supabase e MinIO próprios validados.
 		if cli.Papel != database.PapelSuperAdmin && !rotaConfiguraInfraestrutura(r.URL.Path) {
 			rev, revErr := database.DB.BuscarRevendedorPorID(cli.RevendedorID)
-			if revErr != nil || !rev.InfraestruturaBYOPronta() {
+			if revErr != nil || (rev.ID != "rev_woohub_oficial" && !rev.InfraestruturaBYOPronta()) {
 				responderErro(w, http.StatusPreconditionFailed, "A infraestrutura da revenda ainda não está configurada. Cadastre e valide o Supabase e o MinIO próprios para liberar o painel.")
 				return
 			}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -42,6 +43,14 @@ type OpcoesEnvio struct {
 	TituloLink          string   `json:"titulo_link,omitempty"`
 	DescricaoLink       string   `json:"descricao_link,omitempty"`
 	UrlLink             string   `json:"url_link,omitempty"`
+}
+
+// BotaoInterativo representa um botão Native Flow no padrão moderno do WhatsApp (CTA URL, Pix Copia e Cola, Quick Reply)
+type BotaoInterativo struct {
+	Tipo  string `json:"tipo"`            // "url", "copiar", "resposta", "chamada" ou "cta_url", "cta_copy", "quick_reply", "cta_call"
+	Texto string `json:"texto"`           // Texto visível do botão
+	Valor string `json:"valor"`           // URL do site, código Pix/cupom, ID da resposta ou telefone
+	Id    string `json:"id,omitempty"`    // ID customizado do botão (para quick_reply)
 }
 
 // ContatoCartao representa um contato para geração automática de vCard 3.0 ou envio direto
@@ -588,6 +597,157 @@ func (g *GerenciadorInstancias) EnviarMensagemEnquete(ctx context.Context, id, d
 }
 
 // EnviarMensagemLocalizacao envia coordenadas de mapa com nome do estabelecimento e endereço
+
+// EnviarMensagemInterativa envia mensagem com botões interativos nativos (Native Flow Buttons: CTA URL, Pix Copia e Cola, Quick Reply)
+func (g *GerenciadorInstancias) EnviarMensagemInterativa(
+	ctx context.Context,
+	id, destinatario string,
+	titulo, corpo, rodape string,
+	botoes []BotaoInterativo,
+	opcoes *OpcoesEnvio,
+) (string, error) {
+	inst, err := g.ObterInstanciaAtiva(id)
+	if err != nil {
+		return "", err
+	}
+	if !inst.Cliente.IsConnected() {
+		return "", fmt.Errorf("a instância %s não está conectada", id)
+	}
+
+	if strings.TrimSpace(corpo) == "" {
+		if strings.TrimSpace(titulo) != "" {
+			corpo = titulo
+		} else {
+			return "", fmt.Errorf("o corpo da mensagem interativa é obrigatório")
+		}
+	}
+
+	if len(botoes) == 0 {
+		return "", fmt.Errorf("ao menos um botão interativo deve ser fornecido")
+	}
+
+	jid, err := ObterJIDPadrao(destinatario)
+	if err != nil {
+		return "", err
+	}
+
+	var nativeButtons []*waProto.InteractiveMessage_NativeFlowMessage_NativeFlowButton
+	for i, b := range botoes {
+		tipoNorm := strings.ToLower(strings.TrimSpace(b.Tipo))
+		textoBotao := strings.TrimSpace(b.Texto)
+		if textoBotao == "" {
+			textoBotao = fmt.Sprintf("Opção %d", i+1)
+		}
+
+		var nomeTipo string
+		var paramsBytes []byte
+		var errJson error
+
+		switch tipoNorm {
+		case "url", "cta_url", "link":
+			nomeTipo = "cta_url"
+			urlAlvo := strings.TrimSpace(b.Valor)
+			paramsBytes, errJson = json.Marshal(map[string]string{
+				"display_text": textoBotao,
+				"url":          urlAlvo,
+				"merchant_url": urlAlvo,
+			})
+
+		case "copiar", "cta_copy", "pix", "cupom":
+			nomeTipo = "cta_copy"
+			paramsBytes, errJson = json.Marshal(map[string]string{
+				"display_text": textoBotao,
+				"copy_code":    strings.TrimSpace(b.Valor),
+			})
+
+		case "resposta", "quick_reply", "reply":
+			nomeTipo = "quick_reply"
+			idBtn := strings.TrimSpace(b.Id)
+			if idBtn == "" {
+				idBtn = strings.TrimSpace(b.Valor)
+			}
+			if idBtn == "" {
+				idBtn = textoBotao
+			}
+			paramsBytes, errJson = json.Marshal(map[string]string{
+				"display_text": textoBotao,
+				"id":           idBtn,
+			})
+
+		case "chamada", "cta_call", "ligar", "telefone":
+			nomeTipo = "cta_call"
+			paramsBytes, errJson = json.Marshal(map[string]string{
+				"display_text": textoBotao,
+				"phone_number": strings.TrimSpace(b.Valor),
+			})
+
+		default:
+			nomeTipo = "quick_reply"
+			idBtn := strings.TrimSpace(b.Id)
+			if idBtn == "" {
+				idBtn = strings.TrimSpace(b.Valor)
+			}
+			if idBtn == "" {
+				idBtn = textoBotao
+			}
+			paramsBytes, errJson = json.Marshal(map[string]string{
+				"display_text": textoBotao,
+				"id":           idBtn,
+			})
+		}
+
+		if errJson != nil {
+			return "", fmt.Errorf("erro ao serializar parâmetros do botão %s: %w", textoBotao, errJson)
+		}
+
+		nativeButtons = append(nativeButtons, &waProto.InteractiveMessage_NativeFlowMessage_NativeFlowButton{
+			Name:             proto.String(nomeTipo),
+			ButtonParamsJSON: proto.String(string(paramsBytes)),
+		})
+	}
+
+	msgVersion := int32(3)
+	flowMsg := &waProto.InteractiveMessage_NativeFlowMessage{
+		Buttons:        nativeButtons,
+		MessageVersion: &msgVersion,
+	}
+
+	var header *waProto.InteractiveMessage_Header
+	if strings.TrimSpace(titulo) != "" {
+		header = &waProto.InteractiveMessage_Header{
+			Title:              proto.String(strings.TrimSpace(titulo)),
+			HasMediaAttachment: proto.Bool(false),
+		}
+	}
+
+	body := &waProto.InteractiveMessage_Body{
+		Text: proto.String(strings.TrimSpace(corpo)),
+	}
+
+	var footer *waProto.InteractiveMessage_Footer
+	if strings.TrimSpace(rodape) != "" {
+		footer = &waProto.InteractiveMessage_Footer{
+			Text: proto.String(strings.TrimSpace(rodape)),
+		}
+	}
+
+	interactiveMsg := &waProto.InteractiveMessage{
+		Header: header,
+		Body:   body,
+		Footer: footer,
+		InteractiveMessage: &waProto.InteractiveMessage_NativeFlowMessage_{
+			NativeFlowMessage: flowMsg,
+		},
+		ContextInfo: g.construirContextInfo(ctx, inst, jid, opcoes),
+	}
+
+	msg := &waProto.Message{
+		InteractiveMessage: interactiveMsg,
+	}
+
+	return g.enviarComFallbackBrasil(ctx, inst, destinatario, "interativa", msg)
+}
+
 func (g *GerenciadorInstancias) EnviarMensagemLocalizacao(ctx context.Context, id, destinatario string, latitude, longitude float64, nome, endereco, urlMapa string, opcoes *OpcoesEnvio) (string, error) {
 	inst, err := g.ObterInstanciaAtiva(id)
 	if err != nil {
@@ -971,6 +1131,18 @@ func (g *GerenciadorInstancias) tratarEventoMensagemCompleta(v *events.Message, 
 	case v.Message.GetListResponseMessage() != nil:
 		texto = v.Message.GetListResponseMessage().GetTitle()
 		tipoMensagem = "resposta_lista"
+	case v.Message.GetInteractiveResponseMessage() != nil:
+		resp := v.Message.GetInteractiveResponseMessage()
+		tipoMensagem = "resposta_interativa"
+		if resp.GetBody() != nil {
+			texto = resp.GetBody().GetText()
+		}
+		if flowResp := resp.GetNativeFlowResponseMessage(); flowResp != nil {
+			if texto == "" {
+				texto = flowResp.GetName()
+			}
+		}
+
 	}
 
 	_ = g.db.GravarLogMensagem(inst.ID, v.Info.ID, tipoMensagem, v.Info.Sender.String(), "RECEBIDA", "LIDA", "")
@@ -1053,6 +1225,22 @@ func (g *GerenciadorInstancias) tratarEventoMensagemCompleta(v *events.Message, 
 		"url_midia":     urlMidiaRemota,
 		"midia_base64":  midiaBase64,
 		"arquivo_local": caminhoSalvo,
+	}
+
+		if resp := v.Message.GetInteractiveResponseMessage(); resp != nil {
+		dadosResp := map[string]interface{}{}
+		if resp.GetBody() != nil {
+			dadosResp["texto"] = resp.GetBody().GetText()
+		}
+		if flowResp := resp.GetNativeFlowResponseMessage(); flowResp != nil {
+			dadosResp["nome"] = flowResp.GetName()
+			dadosResp["params_json"] = flowResp.GetParamsJSON()
+			var paramsParsed map[string]interface{}
+			if errJson := json.Unmarshal([]byte(flowResp.GetParamsJSON()), &paramsParsed); errJson == nil {
+				dadosResp["params"] = paramsParsed
+			}
+		}
+		dadosWebhook["resposta_interativa"] = dadosResp
 	}
 
 	if v.Message.GetLocationMessage() != nil {

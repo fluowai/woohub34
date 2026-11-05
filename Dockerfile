@@ -1,12 +1,11 @@
 # ==============================================================================
 # ESTÁGIO 1: COMPILAÇÃO DO BINÁRIO BLINDADO (FRONTEND EMBUTIDO VIA go:embed)
 # ==============================================================================
-FROM golang:alpine AS builder
+FROM golang:1.27-bookworm AS builder
 
 WORKDIR /app
 
 ENV GOTOOLCHAIN=auto
-RUN apk add --no-cache git gcc musl-dev
 
 COPY go.mod go.sum ./
 RUN go mod download

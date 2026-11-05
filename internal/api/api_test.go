@@ -457,6 +457,7 @@ func TestIsolamentoTresNiveisMegaRevendaCliente(t *testing.T) {
 		t.Fatalf("Erro ao criar revendedor: %v", err)
 	}
 	revID := rev.ID
+	_ = database.DB.AtualizarInfraestruturaRevendedor(revID, "postgresql://user:pass@localhost:5432/alpha", "localhost:9000", "alpha_key", "alpha_secret", "alpha-bucket", "http://localhost:9000", false)
 	_, err = database.DB.CriarUsuarioRevendedor(revID, "Revenda Alpha", "revenda@alpha.com.br", "SenhaRevenda!2026", 100)
 	if err != nil {
 		t.Fatalf("Erro ao criar usuário revendedor: %v", err)
@@ -467,6 +468,7 @@ func TestIsolamentoTresNiveisMegaRevendaCliente(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Erro ao criar Revenda Beta: %v", err)
 	}
+	_ = database.DB.AtualizarInfraestruturaRevendedor(revBeta.ID, "postgresql://user:pass@localhost:5432/beta", "localhost:9000", "beta_key", "beta_secret", "beta-bucket", "http://localhost:9000", false)
 	_, err = database.DB.CriarCliente(revID, "Cliente Alpha 1", "cli1@alpha.com.br", "SenhaCli1!2026", "111", 5)
 	if err != nil {
 		t.Fatalf("Erro ao criar Cliente Alpha 1: %v", err)

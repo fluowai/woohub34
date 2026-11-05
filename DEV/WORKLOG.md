@@ -1,5 +1,33 @@
 # Diário de Bordo (Worklog) - WooHub API
 
+## [2026-11-05] Correção de Erro de Token/Charset no Frontend e Build Docker GitHub Actions
+
+### Diagnóstico e Resoluções
+- **Erro `SyntaxError: Invalid or unexpected token` & Letras acavaladas no Painel:**
+  - Identificada renderização truncada e cache desatualizado no navegador (`app.js?v=20261104v1`).
+  - Adicionado `charset="UTF-8"` no `<script>` de [`web/index.html`](file:///c:/Users/paulo/whatsmeow/web/index.html) e atualizado o cachebuster para `v20261105v1`.
+  - Configurados cabeçalhos HTTP explícitos `Content-Type: application/javascript; charset=utf-8` e `text/html; charset=utf-8` em [`internal/api/routes.go`](file:///c:/Users/paulo/whatsmeow/internal/api/routes.go).
+  - Removidos valores negativos de `letter-spacing` (`-0.5px`, `-0.4px`) em [`web/style.css`](file:///c:/Users/paulo/whatsmeow/web/style.css) para evitar sobreposição de fontes em sistemas Windows.
+- **Falha no Build Docker do GitHub Actions:**
+  - `golang:alpine` falhava na compilação Go 1.27 devido a incompatibilidade com glibc durante download do toolchain no musl.
+  - Atualizado o estágio `builder` do [`Dockerfile`](file:///c:/Users/paulo/whatsmeow/Dockerfile) para `golang:1.27-bookworm`, mantendo o runtime final em `alpine:3.20`.
+- **Precedência RBAC e Testes:**
+  - Ajustada a precedência de verificação de permissões em [`internal/api/handlers.go`](file:///c:/Users/paulo/whatsmeow/internal/api/handlers.go) para retornar `403 Forbidden` antes de validar infraestrutura BYO (`412`).
+  - Suíte completa de testes unitários (`go test ./internal/api/...`) executada com 100% de aprovação.
+
+## [2026-11-05] Implementação de Mensagens Interativas com Botões Native Flow
+
+### Alterações realizadas
+- **send.go:** Atualizadas funções `getButtonTypeFromMessage` e `getButtonAttributes` para reconhecer `waProto.InteractiveMessage` e injetar o nó binário do protocolo WhatsApp Web `<biz><native_flow v="2"/></biz>`.
+- **internal/core/funcionalidades_avancadas.go:**
+  - Adicionada estrutura `BotaoInterativo` com suporte a `cta_url` (link/site), `cta_copy` (chave Pix / cupom), `quick_reply` (resposta rápida) e `cta_call` (ligação).
+  - Implementado método `EnviarMensagemInterativa` com construção hierárquica de `InteractiveMessage_NativeFlowMessage`, cabeçalho opcional com título, corpo, rodapé e suporte a `ContextInfo` (citações e menções).
+  - Tratamento de eventos de cliques em botões interativos (`InteractiveResponseMessage` com `NativeFlowResponseMessage`), extraindo texto, ID e JSON de parâmetros para entrega no payload de Webhook.
+- **internal/api/handlers_avancados.go:** Criado `HandlerEnviarMensagemInterativa` com suporte tanto ao modo real quanto ao modo simulação / sandbox.
+- **internal/api/routes.go:** Mapeadas as rotas protegidas `/api/v1/mensagem/interativa` e `/api/v1/mensagem/botoes`.
+- **web/index.html & web/app.js:** Adicionada a opção "Botões Interativos (Native Flow: Link, Pix Copia e Cola, Resposta)" no simulador de disparos do painel administrativo com preenchimento automático e teste imediato.
+- **internal/core/interativa_test.go:** Criada suíte de testes unitários validando serialização, integridade dos botões e marshalling/unmarshalling do Protobuf `waProto.Message`.
+
 ## [2026-11-04] Política obrigatória de infraestrutura BYO por revenda
 
 ### Alterações realizadas
@@ -388,7 +416,8 @@
    - **Caixa n8n (
 8n.go):** Despacho assíncrono para o Webhook Trigger do n8n com envelope padronizado contendo payload enriquecido de tráfego.
    - **Caixa Kommo CRM (kommo.go):** Integração com a API v4 do Kommo, criando contatos, leads no pipeline/etapa configurados com tags de campanha e registro de notas de histórico.
-   - **Caixa RD Station (dstation.go):** Envio de evento de conversão para o RD Station Marketing com dados de origem, criação de oportunidades no RD Station CRM e webhook de réguas.
+   - **Caixa RD Station (
+dstation.go):** Envio de evento de conversão para o RD Station Marketing com dados de origem, criação de oportunidades no RD Station CRM e webhook de réguas.
    - **Gerenciador de Integrações (gerenciador.go):** Orquestrador multi-thread com recuperação de pânicos isolada por caixa e ferramenta de teste de conectividade (TestarConexao).
 4. **Camada HTTP REST & Webhooks Receptores (internal/api/):**
    - GET/POST /api/v1/instancia/{id}/integracoes
