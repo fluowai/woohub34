@@ -28,6 +28,8 @@ temp/
 .env
 .env.local
 .env.production
+portainer-stack-wooapi.yml
+portainer-stack*.local.yml
 
 # Testes e cobertura Go
 *.test

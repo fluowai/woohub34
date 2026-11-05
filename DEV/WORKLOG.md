@@ -1,5 +1,22 @@
 # Diário de Bordo (Worklog) - WooHub API
 
+## [2026-11-05] Migração do Supabase Oficial e Criação da Stack Portainer (wooapi.wootech.com.br)
+
+### Ações Executadas
+- **Migração do Banco de Dados Supabase (PostgreSQL 17):**
+  - Conexão validada no endpoint `aws-1-sa-east-1.pooler.supabase.com:6543/postgres` (projeto `mezeowslqgpvepeiwfgd`).
+  - Executadas com sucesso todas as migrações DDL e seed inicial:
+    - 11 tabelas da aplicação (`clientes`, `instancias`, `logs_mensagens`, `sessoes_auth`, `licencas_instalacoes`, `integracoes_instancia`, `sessoes_typebot`, `atribuicoes_contato`, `configuracoes_email_revenda`, `onboarding_contas`, `revendedores`).
+    - 17 tabelas do motor WhatsMeow (`whatsmeow_device`, `whatsmeow_identity_keys`, `whatsmeow_pre_keys`, `whatsmeow_sessions`, `whatsmeow_sender_keys`, etc.).
+- **Ajuste de Content-Security-Policy (CSP) no Servidor Web:**
+  - O cabeçalho CSP de produção em [`internal/api/routes.go`](file:///c:/Users/paulo/whatsmeow/internal/api/routes.go) bloqueava a execução de manipuladores de eventos inline (`onclick`, `onsubmit`, `onchange`) do painel web devido a `script-src 'self'`.
+  - Atualizado para `script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https: wss: ws:;` permitindo interação fluida no frontend e conexões com APIs externas e WebSockets.
+- **Geração da Stack Portainer para `wooapi.wootech.com.br`:**
+  - Criado o arquivo [`portainer-stack-wooapi.yml`](file:///c:/Users/paulo/whatsmeow/portainer-stack-wooapi.yml) configurado com labels Traefik (rede `woo-network`, certificado `letsencryptresolver`, entrypoint `websecure` e porta 8080).
+  - Atualizado `ADMIN_SENHA` para `WooAdmin2026!Brasil` e `CORS_ORIGENS` para `https://wooapi.wootech.com.br` para atender à validação estrita de segurança do modo de produção.
+  - Atualizado o hash de senha do administrador diretamente no Supabase.
+  - Atualizado o arquivo de configuração local [`.env`](file:///c:/Users/paulo/whatsmeow/.env).
+
 ## [2026-11-05] Correção de Erro de Token/Charset no Frontend e Build Docker GitHub Actions
 
 ### Diagnóstico e Resoluções
