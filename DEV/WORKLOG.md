@@ -9,8 +9,10 @@
   - Configurados cabeçalhos HTTP explícitos `Content-Type: application/javascript; charset=utf-8` e `text/html; charset=utf-8` em [`internal/api/routes.go`](file:///c:/Users/paulo/whatsmeow/internal/api/routes.go).
   - Removidos valores negativos de `letter-spacing` (`-0.5px`, `-0.4px`) em [`web/style.css`](file:///c:/Users/paulo/whatsmeow/web/style.css) para evitar sobreposição de fontes em sistemas Windows.
 - **Falha no Build Docker do GitHub Actions:**
-  - `golang:alpine` falhava na compilação Go 1.27 devido a incompatibilidade com glibc durante download do toolchain no musl.
-  - Atualizado o estágio `builder` do [`Dockerfile`](file:///c:/Users/paulo/whatsmeow/Dockerfile) para `golang:1.27-bookworm`, mantendo o runtime final em `alpine:3.20`.
+  - Identificada a causa raiz exata da falha no GitHub Actions: no `.gitignore`, a regra `woohub-api` (sem barra inicial `/`) fazia o Git ignorar o diretório inteiro `cmd/woohub-api/`! Com isso, o arquivo `cmd/woohub-api/main.go` nunca foi enviado ao GitHub, e o Dockerfile falhava ao compilar `./cmd/woohub-api` por ausência do pacote.
+  - Corrigido o `.gitignore` para `/woohub-api` e adicionadas exceções explícitas `!cmd/` e `!cmd/**`.
+  - Criado o arquivo `.dockerignore` para isolar mídias, bancos SQLite locais e histórico git do contexto de build.
+  - Atualizado o estágio `builder` do [`Dockerfile`](file:///c:/Users/paulo/whatsmeow/Dockerfile) para `golang:1.27-bookworm`.
 - **Precedência RBAC e Testes:**
   - Ajustada a precedência de verificação de permissões em [`internal/api/handlers.go`](file:///c:/Users/paulo/whatsmeow/internal/api/handlers.go) para retornar `403 Forbidden` antes de validar infraestrutura BYO (`412`).
   - Suíte completa de testes unitários (`go test ./internal/api/...`) executada com 100% de aprovação.

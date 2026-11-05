@@ -1,11 +1,16 @@
-# Binários e executáveis
-bin/
+# Binários e executáveis compilados na raiz
+/bin/
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-woohub-api
+/woohub-api
+/woohub-linux
+
+# Garantir que o código-fonte em cmd/ seja sempre versionado
+!cmd/
+!cmd/**
 
 # Bancos de dados locais (SQLite)
 *.db
