@@ -31,6 +31,13 @@ function extrairDados(resJson) {
   return resJson;
 }
 
+// Valida se uma string é uma URL de foto válida e carregável pelo navegador
+function urlValidaFoto(url) {
+  if (!url || typeof url !== 'string') return false;
+  const u = url.trim().toLowerCase();
+  return u.startsWith('http://') || u.startsWith('https://') || u.startsWith('data:image/');
+}
+
 // ============================================================================
 // 1. INICIALIZAÇÃO DA APLICAÇÃO
 // ============================================================================
@@ -138,7 +145,7 @@ async function carregarRecursosPlano() {
     const recursos = dados.recursos || json.recursos;
     if (json.sucesso && recursos) {
       ESTADO.recursosPlano = recursos;
-      
+
       const badge = document.getElementById('badge-plano-topo');
       if (badge) {
         badge.innerText = (recursos.nome_plano || 'STARTER').toUpperCase();
@@ -468,31 +475,56 @@ function renderizarListaConversas() {
       numeroReal = c.chat_jid.replace('@s.whatsapp.net', '');
     }
 
+    const ehNewsletter = c.chat_jid && c.chat_jid.includes('@newsletter');
+    const ehGrupo = c.eh_grupo || (c.chat_jid && c.chat_jid.includes('@g.us')) || ehNewsletter;
+
     let nomePrincipal = '';
-    if (c.eh_grupo) {
-      nomePrincipal = (c.nome_contato && !c.nome_contato.includes('@')) ? c.nome_contato : 'Grupo do WhatsApp';
+    const nomeBruto = (c.nome_contato || '').trim();
+    const ehApenasDigitos = /^\d+$/.test(nomeBruto);
+
+    if (ehNewsletter) {
+      if (nomeBruto && !nomeBruto.includes('@') && !ehApenasDigitos) {
+        nomePrincipal = nomeBruto;
+      } else {
+        nomePrincipal = 'Canal WhatsApp';
+      }
+    } else if (ehGrupo) {
+      if (nomeBruto && !nomeBruto.includes('@') && !ehApenasDigitos) {
+        nomePrincipal = nomeBruto;
+      } else {
+        nomePrincipal = 'Grupo do WhatsApp';
+      }
     } else {
-      if (c.nome_contato && !c.nome_contato.includes('@')) {
-        nomePrincipal = c.nome_contato;
+      if (nomeBruto && !nomeBruto.includes('@') && !ehApenasDigitos) {
+        nomePrincipal = nomeBruto;
       } else if (numeroReal) {
         nomePrincipal = numeroReal;
+      } else if (c.chat_jid) {
+        nomePrincipal = c.chat_jid.split('@')[0];
       } else {
-        nomePrincipal = 'Contato WhatsApp';
+        nomePrincipal = 'Contato';
       }
     }
 
-    item.onclick = () => abrirConversa(c.chat_jid, nomePrincipal, numeroReal, c.foto_url, c.eh_grupo);
+    item.onclick = () => abrirConversa(c.chat_jid, nomePrincipal, numeroReal, c.foto_url, ehGrupo);
 
     const hora = formatarHora(c.ultimo_timestamp || c.atualizado_em);
     const inicial = (nomePrincipal || 'C')[0].toUpperCase();
+    const iconeFallback = ehNewsletter ? '📢' : (ehGrupo ? '👥' : (numeroReal ? '📱' : inicial));
 
-    const avatarHtml = c.foto_url
-      ? `<img src="${c.foto_url}" onerror="this.parentElement.innerHTML='${c.eh_grupo ? '👥' : inicial}'">`
-      : (c.eh_grupo ? '👥' : inicial);
+    const temFoto = urlValidaFoto(c.foto_url);
+    const avatarHtml = temFoto
+      ? `<img src="${c.foto_url}" onerror="this.parentElement.innerHTML='${iconeFallback}'">`
+      : iconeFallback;
 
-    const sublinhaContato = c.eh_grupo
-      ? `<span class="item-contato-badge-grupo">Grupo</span>`
-      : (numeroReal ? `<span class="item-contato-numero">📱 ${escaparHTML(numeroReal)}</span>` : '');
+    let sublinhaContato = '';
+    if (ehNewsletter) {
+      sublinhaContato = `<span class="item-contato-badge-grupo" style="background-color: #0284c7;">Canal</span>`;
+    } else if (ehGrupo) {
+      sublinhaContato = `<span class="item-contato-badge-grupo">Grupo</span>`;
+    } else if (numeroReal) {
+      sublinhaContato = `<span class="item-contato-numero">📱 ${escaparHTML(numeroReal)}</span>`;
+    }
 
     item.innerHTML = `
       <div class="avatar-circulo" style="${c.eh_grupo && !c.foto_url ? 'background:#1f3536;' : ''}">${avatarHtml}</div>
@@ -598,7 +630,7 @@ async function abrirConversa(chatJid, nomeContato, numeroTelefone, fotoURL, ehGr
 
   const elAvatar = document.getElementById('chat-ativo-avatar');
   if (elAvatar) {
-    if (fotoURL) {
+    if (urlValidaFoto(fotoURL)) {
       elAvatar.innerHTML = `<img src="${fotoURL}" onerror="this.parentElement.innerHTML='${ehGrupo ? '👥' : (nomeContato || 'C')[0].toUpperCase()}'">`;
     } else {
       elAvatar.innerHTML = ehGrupo ? '👥' : (nomeContato || 'C')[0].toUpperCase();
@@ -1123,6 +1155,19 @@ async function excluirSnippet(id) {
 // 9. SUPER-PODERES: BOTÕES INTERATIVOS & AGENDAMENTO
 // ============================================================================
 function abrirModalBotoesInterativos() {
+  if (!ESTADO.chatAtivoJid) {
+    alert('Selecione uma conversa ativa antes de enviar botões interativos.');
+    return;
+  }
+  if (ESTADO.chatAtivoJid.includes('@newsletter')) {
+    alert('Canais de transmissão do WhatsApp não suportam mensagens interativas com botões.');
+    return;
+  }
+  if (ESTADO.chatAtivoJid.includes('@g.us')) {
+    alert('Grupos do WhatsApp não suportam botões interativos nativos (recurso exclusivo de conversas diretas).');
+    return;
+  }
+
   const rec = ESTADO.recursosPlano;
   const trava = document.getElementById('trava-plano-botoes');
   const btn = document.getElementById('btn-enviar-botoes');
@@ -1138,6 +1183,19 @@ function abrirModalBotoesInterativos() {
 }
 
 async function executarEnvioBotoes() {
+  if (!ESTADO.chatAtivoJid) {
+    alert('Selecione uma conversa ativa antes de enviar botões.');
+    return;
+  }
+  if (ESTADO.chatAtivoJid.includes('@newsletter')) {
+    alert('Canais de transmissão do WhatsApp não suportam mensagens com botões.');
+    return;
+  }
+  if (ESTADO.chatAtivoJid.includes('@g.us')) {
+    alert('Grupos do WhatsApp não suportam botões interativos nativos.');
+    return;
+  }
+
   const corpo = document.getElementById('botoes-msg-corpo').value.trim();
   const op1 = document.getElementById('botoes-opcao-1').value.trim();
   const op2 = document.getElementById('botoes-opcao-2').value.trim();
@@ -1151,6 +1209,12 @@ async function executarEnvioBotoes() {
   const botoes = [{ tipo: 'resposta', texto: op1, id: 'btn_1' }];
   if (op2) botoes.push({ tipo: 'resposta', texto: op2, id: 'btn_2' });
   if (op3) botoes.push({ tipo: 'resposta', texto: op3, id: 'btn_3' });
+
+  const btn = document.getElementById('btn-enviar-botoes');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = 'Disparando botões...';
+  }
 
   try {
     const res = await fetch('/api/v1/mensagem/interativa', {
@@ -1167,13 +1231,23 @@ async function executarEnvioBotoes() {
       })
     });
     const dados = await res.json();
-    if (dados.sucesso) {
+    if (res.ok && dados.sucesso) {
       fecharModal('modal-botoes');
+      document.getElementById('botoes-msg-corpo').value = '';
+      document.getElementById('botoes-opcao-1').value = '';
+      document.getElementById('botoes-opcao-2').value = '';
+      document.getElementById('botoes-opcao-3').value = '';
     } else {
-      alert(dados.erro || 'Erro ao enviar botões.');
+      alert('Erro ao enviar botões: ' + (dados.erro || dados.mensagem || `Status HTTP ${res.status}`));
     }
   } catch (e) {
-    alert('Erro de conexão ao enviar botões.');
+    console.error('Erro ao enviar botões:', e);
+    alert('Erro de comunicação ao enviar botões: ' + e.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = 'Disparar Botões Interativos';
+    }
   }
 }
 
@@ -1396,5 +1470,207 @@ document.addEventListener('click', (e) => {
   if (menu && menu.style.display !== 'none' && !e.target.closest('.dropdown-menu-wrapper')) {
     menu.style.display = 'none';
   }
+  const dropdownAnexos = document.getElementById('dropdown-anexos');
+  if (dropdownAnexos && dropdownAnexos.style.display !== 'none' && !e.target.closest('.chat-footer')) {
+    dropdownAnexos.style.display = 'none';
+  }
 });
+
+// ============================================================================
+// 13. DETALHES DO CONTATO, ANEXOS & MODAIS COMPLEMENTARES
+// ============================================================================
+function abrirDetalhesContato() {
+  if (!ESTADO.chatAtivoJid) return;
+
+  const nomeEl = document.getElementById('detalhe-contato-nome');
+  const numeroEl = document.getElementById('detalhe-contato-numero');
+  const jidEl = document.getElementById('detalhe-contato-jid');
+  const tipoEl = document.getElementById('detalhe-contato-tipo');
+  const avatarEl = document.getElementById('detalhe-contato-avatar');
+  const linkWaEl = document.getElementById('detalhe-contato-link-wa');
+
+  const c = ESTADO.conversas.find(x => x.chat_jid === ESTADO.chatAtivoJid);
+  const nome = (c && c.nome_contato) || (document.getElementById('chat-ativo-nome') ? document.getElementById('chat-ativo-nome').innerText : 'Contato');
+  const numero = (c && c.numero_telefone) || (document.getElementById('chat-ativo-numero') ? document.getElementById('chat-ativo-numero').innerText : '');
+  const jid = ESTADO.chatAtivoJid;
+  const ehGrupo = c ? c.eh_grupo : jid.includes('@g.us');
+  const ehNewsletter = jid.includes('@newsletter');
+
+  if (nomeEl) nomeEl.innerText = nome;
+  if (numeroEl) numeroEl.innerText = numero ? `📱 ${numero}` : (ehGrupo ? 'Grupo Oficial' : (ehNewsletter ? 'Canal de Transmissão' : 'Sem número direto'));
+  if (jidEl) jidEl.innerText = jid;
+  if (tipoEl) {
+    if (ehNewsletter) tipoEl.innerText = '📢 Canal de Transmissão';
+    else if (ehGrupo) tipoEl.innerText = '👥 Grupo do WhatsApp';
+    else tipoEl.innerText = '👤 Conversa Individual';
+  }
+  if (avatarEl) {
+    if (c && urlValidaFoto(c.foto_url)) {
+      avatarEl.innerHTML = `<img src="${c.foto_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+    } else {
+      avatarEl.innerHTML = ehNewsletter ? '📢' : (ehGrupo ? '👥' : (nome[0] || 'C').toUpperCase());
+    }
+  }
+  if (linkWaEl) {
+    if (numero && !ehGrupo && !ehNewsletter) {
+      const numDigitos = numero.replace(/\D/g, '');
+      linkWaEl.href = `https://wa.me/${numDigitos}`;
+      linkWaEl.style.display = 'inline-flex';
+    } else {
+      linkWaEl.style.display = 'none';
+    }
+  }
+
+  abrirModal('modal-detalhes-contato');
+}
+
+function copiarTextoClipboard(texto, labelFeedback) {
+  if (!texto) return;
+  navigator.clipboard.writeText(texto).then(() => {
+    alert((labelFeedback || 'Texto') + ' copiado com sucesso!');
+  }).catch(() => {
+    prompt('Copie o valor:', texto);
+  });
+}
+
+function abrirModalRespostasRapidas() {
+  abrirModalSnippets();
+}
+
+function abrirModalCopilotIA() {
+  const rec = ESTADO.recursosPlano;
+  if (rec && !rec.copilot_ia && !rec.ia_copilot) {
+    alert('🤖 O Copilot de Inteligência Artificial é exclusivo dos planos Business Pro e Enterprise.');
+    return;
+  }
+  abrirModal('modal-copilot-ia');
+}
+
+async function executarCopilotIA() {
+  const promptTxt = document.getElementById('copilot-prompt-ia').value.trim();
+  if (!promptTxt) {
+    alert('Informe a instrução para o Copilot.');
+    return;
+  }
+  const campoTexto = document.getElementById('campo-texto-msg');
+  if (campoTexto) {
+    campoTexto.value = promptTxt;
+    ajustarAlturaTextarea(campoTexto);
+  }
+  fecharModal('modal-copilot-ia');
+}
+
+function alternarMenuAnexos(event) {
+  if (event) event.stopPropagation();
+  const dropdown = document.getElementById('dropdown-anexos');
+  if (!dropdown) return;
+  dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
+}
+
+function dispararInputArquivo(tipo) {
+  const dropdown = document.getElementById('dropdown-anexos');
+  if (dropdown) dropdown.style.display = 'none';
+  if (tipo === 'imagem') {
+    const inp = document.getElementById('input-anexo-midia');
+    if (inp) inp.click();
+  } else if (tipo === 'documento') {
+    const inp = document.getElementById('input-anexo-doc');
+    if (inp) inp.click();
+  }
+}
+
+async function enviarMidiaSelecionada(input, tipo) {
+  if (!input.files || input.files.length === 0) return;
+  const arquivo = input.files[0];
+  if (!ESTADO.chatAtivoJid) {
+    alert('Selecione uma conversa ativa para enviar arquivo.');
+    input.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const base64 = reader.result;
+    try {
+      const endpoint = tipo === 'imagem' ? '/api/v1/mensagem/imagem' : '/api/v1/mensagem/documento';
+      const bodyPayload = {
+        instancia_id: ESTADO.instanciaAtivaId,
+        destinatario: ESTADO.chatAtivoJid,
+        nome_arquivo: arquivo.name,
+        mimetype: arquivo.type
+      };
+      if (tipo === 'imagem') {
+        bodyPayload.imagem = base64;
+      } else {
+        bodyPayload.documento = base64;
+      }
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${ESTADO.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bodyPayload)
+      });
+      const dados = await res.json();
+      if (!res.ok || !dados.sucesso) {
+        alert('Erro ao enviar mídia: ' + (dados.erro || dados.mensagem || `Status ${res.status}`));
+      }
+    } catch (e) {
+      console.error('Erro ao enviar mídia:', e);
+      alert('Falha de rede ao enviar mídia.');
+    } finally {
+      input.value = '';
+    }
+  };
+  reader.readAsDataURL(arquivo);
+}
+
+function abrirModalContatoVCard() {
+  const dropdown = document.getElementById('dropdown-anexos');
+  if (dropdown) dropdown.style.display = 'none';
+  abrirModal('modal-enviar-contato');
+}
+
+async function executarEnvioContatoVCard() {
+  const nome = document.getElementById('vcard-nome').value.trim();
+  const tel = document.getElementById('vcard-telefone').value.trim();
+  if (!nome || !tel) {
+    alert('Informe o nome e o telefone do contato.');
+    return;
+  }
+  if (!ESTADO.chatAtivoJid) {
+    alert('Selecione uma conversa ativa para enviar contato.');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/v1/mensagem/contato', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${ESTADO.token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        instancia_id: ESTADO.instanciaAtivaId,
+        destinatario: ESTADO.chatAtivoJid,
+        contato: {
+          nome: nome,
+          telefone: tel
+        }
+      })
+    });
+    const dados = await res.json();
+    if (res.ok && dados.sucesso) {
+      fecharModal('modal-enviar-contato');
+      document.getElementById('vcard-nome').value = '';
+      document.getElementById('vcard-telefone').value = '';
+    } else {
+      alert('Erro ao enviar contato: ' + (dados.erro || dados.mensagem || `Status ${res.status}`));
+    }
+  } catch (e) {
+    console.error('Erro ao enviar contato:', e);
+    alert('Falha ao enviar contato.');
+  }
+}
 

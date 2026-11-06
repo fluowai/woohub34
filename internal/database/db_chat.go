@@ -129,6 +129,9 @@ func (g *GerenciadorDB) CriarTabelasChat() error {
 	_, _ = g.db.Exec(`ALTER TABLE chat_mensagens ADD COLUMN remetente_nome TEXT DEFAULT ''`)
 	_, _ = g.db.Exec(`ALTER TABLE chat_mensagens ADD COLUMN remetente_numero TEXT DEFAULT ''`)
 
+	// Limpeza de foto_url inválidas (ex: nomes de arquivo diretos do WhatsApp como .jpg salvos sem esquema HTTP)
+	_, _ = g.db.Exec(`UPDATE chat_conversas SET foto_url = '' WHERE foto_url != '' AND foto_url NOT LIKE 'http%' AND foto_url NOT LIKE 'data:%'`)
+
 	return nil
 }
 
@@ -569,6 +572,25 @@ func (g *GerenciadorDB) SalvarRespostaRapida(r RespostaRapidaChat) error {
 func (g *GerenciadorDB) ExcluirRespostaRapida(clienteID, id string) error {
 	_, err := g.exec(`DELETE FROM chat_respostas_rapidas WHERE cliente_id = ? AND id = ?`, clienteID, id)
 	return err
+}
+
+// ObterPushNameRecente busca o último PushName registrado para um JID em mensagens recebidas
+func (g *GerenciadorDB) ObterPushNameRecente(instanciaID, jid string) string {
+	if g == nil || instanciaID == "" || jid == "" {
+		return ""
+	}
+	var nome string
+	row := g.queryRow(`
+		SELECT remetente_nome 
+		FROM chat_mensagens 
+		WHERE instancia_id = ? AND (chat_jid = ? OR remetente_jid = ?) 
+		  AND remetente_nome != '' AND remetente_nome != chat_jid AND remetente_nome NOT LIKE '%@%'
+		ORDER BY criado_em DESC LIMIT 1
+	`, instanciaID, jid, jid)
+	if err := row.Scan(&nome); err == nil {
+		return strings.TrimSpace(nome)
+	}
+	return ""
 }
 
 // ItemLogDestinatario representa um contato extraído do histórico de disparos

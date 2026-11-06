@@ -1,6 +1,71 @@
 # Diário de Bordo (Worklog) - WooHub API
 
-## [2026-11-06] Sincronização Completa de Histórico WhatsApp Multidevice (HistorySync) e Cabeçalho Oficial Pixel-Perfect
+## [2026-11-06] Resolução de Falhas de HTTP/2 SSE, 404 de Imagens de Canais, Uncaught abrirDetalhesContato e Validação de Mensagens Interativas
+
+### Diagnóstico dos 4 Erros do Console
+1. **`api/v1/chat/stream?instancia_id=inst_homolog net::ERR_HTTP2_PROTOCOL_ERROR`**:
+   - `HandlerStreamChatWeb` enviava o cabeçalho `Connection: keep-alive` incondicionalmente. Pela especificação RFC 7540 seção 8.1.2.2, mensagens HTTP/2 com cabeçalhos de conexão específicos são tratadas como malformadas, fazendo com que browsers baseados em Chromium fechem a stream com `ERR_HTTP2_PROTOCOL_ERROR`.
+   - Faltava desarmar prazos de escrita via `http.NewResponseController(w).SetWriteDeadline(time.Time{})`.
+2. **`AC5D659A4690B7551F7CDC77EE9F196B.jpg 404 (Not Found)`**:
+   - Ao resolver canais/newsletters (`@newsletter`), se `Picture.URL` estava vazio, o código gravava `Picture.DirectPath` (ex: `AC5D659A4690B7551F7CDC77EE9F196B.jpg`) como `foto_url`. Por ser um caminho relativo, o browser tentava requisitar diretamente da raiz da API, gerando 404.
+3. **`Uncaught ReferenceError: abrirDetalhesContato is not defined at HTMLDivElement.onclick (chat:190:75)`**:
+   - A div do topo da conversa ativa (`contato-info-topo`) chamava `abrirDetalhesContato()`, que não existia no JavaScript. Além dela, os botões de anexos (`alternarMenuAnexos`, `dispararInputArquivo`, `enviarMidiaSelecionada`, `abrirModalContatoVCard`) e Copilot IA não possuíam manipuladores.
+4. **`POST /api/v1/mensagem/interativa 500 (Internal Server Error)`**:
+   - Disparo do modal de botões sem conversa direta válida selecionada ou apontando para um canal de transmissão (`@newsletter`), onde o WhatsApp rejeita o envio de botões interativos nativos. Faltava validação preventiva no frontend e mensagens semânticas com HTTP 400 no backend.
+
+### Correções Aplicadas
+1. **Conexão SSE HTTP/2 Segura (`internal/api/handlers_chat.go` e `internal/api/handlers.go`):**
+   - Configurado `SetWriteDeadline(time.Time{})` via `http.NewResponseController`.
+   - Adicionada condicional `if r.ProtoMajor == 1 { w.Header().Set("Connection", "keep-alive") }`.
+   - Definido `Cache-Control: no-cache, no-transform`.
+2. **Sanitização de URLs de Fotos (`internal/core/chat_resolver.go`, `internal/database/db_chat.go`, `web/chat.js`):**
+   - Removida atribuição de `DirectPath` para `FotoURL`. Somente URLs iniciadas com `http://` ou `https://` são aceitas.
+   - Adicionada rotina de expurgo no banco para limpar `foto_url` gravadas anteriormente com nomes brutos de arquivos.
+   - Implementada função auxiliar `urlValidaFoto(url)` no frontend antes de montar tags `<img>`.
+   - Incluídas extensões de mídia (`.jpg`, `.jpeg`, `.webp`, `.mp4`, etc.) na rota estática do servidor em `internal/api/routes.go`.
+3. **Implementação de Detalhes do Contato e Handlers da Interface (`web/chat.html` e `web/chat.js`):**
+   - Criado modal `modal-detalhes-contato` com foto grande, nome real, número formatado, JID técnico, botões de cópia para clipboard e link para abrir no WhatsApp oficial.
+   - Implementada função `abrirDetalhesContato()`, `copiarTextoClipboard()`, e alias `abrirModalRespostasRapidas()`.
+   - Implementados menus e envio de anexos (`alternarMenuAnexos`, `dispararInputArquivo`, `enviarMidiaSelecionada`, `abrirModalContatoVCard`, `executarEnvioContatoVCard`).
+   - Implementado modal do `modal-copilot-ia`.
+4. **Proteção e Validação de Mensagens Interativas (`web/chat.js`, `internal/core/funcionalidades_avancadas.go`, `internal/api/handlers_avancados.go`):**
+   - Validação antes do disparo no chat web: impede envio se nenhuma conversa estiver aberta, ou se for canal (`@newsletter`) ou grupo (`@g.us`), com aviso claro ao usuário.
+   - Validação semântica no Go com retorno HTTP 400 em vez de erro interno 500.
+
+### Verificação
+- `go vet ./internal/...`: PASS (código 0).
+- `go test -v ./internal/core -run TestConstrucaoBotoesInterativos`: PASS (0.02s).
+- `go test -v ./internal/api -run TestChat`: PASS (0.79s).
+- `go build -o ./bin/woohub-api.exe ./cmd/woohub-api`: SUCESSO (código 0).
+
+## [2026-11-06] Priorização Estrita de PushName Real (Macnamara), Resolução de Newsletters/Canais e Fallback para Número Real
+
+### Diagnóstico e Solicitação do Maestro
+- **Problema Relatado:** Na conversa com o contato `554899961959` aparecia o nome `"Paulo"`, sendo que o nome real do perfil do contato no WhatsApp é `"Macnamara"`. Além disso, canais/newsletters (`120363171917300595`, `120363247633739480`, etc.) apareciam com número cru sem nome ou foto, e na pior situação devia ser exibido o número de telefone em vez de strings genéricas ou nomes incorretos.
+- **Causa Raiz Identificada:**
+  1. No Whatsmeow, o `Store.Contacts` armazena `FullName` (o nome com que o contato foi salvo localmente na agenda do telefone que pareou o WhatsApp) e `PushName` (o nome que o próprio contato escolheu para si no perfil do WhatsApp). O resolvedor anterior dava prioridade a `FullName` sobre `PushName`, sobrescrevendo o PushName verdadeiro (`Macnamara`) pelo apelido local (`Paulo`).
+  2. Newsletters e Canais do WhatsApp usam o domínio `@newsletter` (`types.NewsletterServer`). O código anterior não consultava as APIs de canais (`GetNewsletterInfo` e `GetSubscribedNewsletters`), fazendo com que o ID numérico bruto aparecesse como título.
+  3. No frontend (`renderizarListaConversas`), se o nome fosse apenas dígitos (IDs de canais/grupos), não havia fallback adequado para nomes humanizados ou número de telefone.
+
+### Implementações Realizadas
+1. **Precedência Estrita do PushName (`internal/core/chat_resolver.go`):**
+   - Alterada a ordem de precedência:
+     1. **PushName Real:** Prioridade máxima (obtido via hint do evento em tempo real, `c.PushName` do Whatsmeow ou `remetente_nome` da tabela de mensagens).
+     2. **BusinessName:** Nome verificado comercial da empresa.
+     3. **FullName:** Nome da agenda local apenas como fallback secundário.
+     4. **Número de Telefone Real:** Na ausência de nome, exibe obrigatoriamente o número limpo (`info.Numero`).
+   - Implementado método `ObterPushNameRecente(instanciaID, jid)` em `internal/database/db_chat.go` para resgatar o PushName gravado nas mensagens recebidas.
+2. **Suporte Completo a Newsletters e Canais (`@newsletter`):**
+   - Em `ResolverInfoContato`, para JIDs com `types.NewsletterServer`, o sistema agora consulta `GetNewsletterInfo` e extrai `meta.ThreadMeta.Name.Text` e `meta.ThreadMeta.Picture`.
+   - Em `SincronizarContatosEGrupos`, chama `GetSubscribedNewsletters` para importar todos os canais que o usuário segue com títulos e fotos corretas.
+3. **Tratamento no Frontend (`web/chat.js`):**
+   - Se o nome da conversa for composto apenas por números longos (IDs técnicos de canais), exibe `Canal WhatsApp` com ícone `📢`, ou o número de telefone real formatado.
+   - Fallback de fotos de perfil com carregamento sem preview caso o thumbnail não esteja disponível.
+
+### Verificação
+- `go vet ./internal/core`: PASS.
+- `go test -v ./internal/core`: PASS.
+- `go build -o ./bin/woohub-api.exe ./cmd/woohub-api`: SUCESSO (30.8 MB).
 
 ### Diagnóstico e Solicitação do Maestro
 - **Problema 1 (Cabeçalho da Sidebar Apertado):** O topo da barra lateral estava com a altura de 60px espremida pelo nome do usuário e pelo badge roxo horizontal de 26 caracteres (`ENTERPRISE / WHITE-LABEL`), tornando o cabeçalho sobrecarregado visualmente e desalinhado em relação ao WhatsApp Web oficial.

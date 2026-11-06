@@ -754,9 +754,12 @@ func (g *GerenciadorInstancias) tratarEventoHistorySync(v *events.HistorySync, i
 	}
 
 	// 1. Mapeamento de Pushnames recebidos no historico
+	pushnamesMap := make(map[string]string)
 	for _, pn := range v.Data.GetPushnames() {
 		if pn.GetID() != "" && pn.GetPushname() != "" {
+			pushnamesMap[pn.GetID()] = pn.GetPushname()
 			if jid, err := types.ParseJID(pn.GetID()); err == nil {
+				pushnamesMap[jid.User] = pn.GetPushname()
 				_ = g.db.AtualizarDadosConversa(inst.ID, jid.String(), pn.GetPushname(), jid.User, "", jid.Server == types.GroupServer)
 			}
 		}
@@ -786,10 +789,20 @@ func (g *GerenciadorInstancias) tratarEventoHistorySync(v *events.HistorySync, i
 			continue
 		}
 
-		nome := conv.GetDisplayName()
+		// Prioriza o PushName real do contato
+		nome := ""
+		if pn, ok := pushnamesMap[chatJIDStr]; ok && pn != "" {
+			nome = pn
+		} else if pnUser, okUser := pushnamesMap[chatJID.User]; okUser && pnUser != "" {
+			nome = pnUser
+		}
+		if nome == "" {
+			nome = conv.GetDisplayName()
+		}
 		if nome == "" {
 			nome = conv.GetName()
 		}
+
 		numero := chatJID.User
 		if conv.GetPnJID() != "" {
 			if pn, errPN := types.ParseJID(conv.GetPnJID()); errPN == nil {
@@ -797,10 +810,18 @@ func (g *GerenciadorInstancias) tratarEventoHistorySync(v *events.HistorySync, i
 			}
 		}
 
-		ehGrupo := chatJID.Server == types.GroupServer
-		if nome != "" || numero != "" {
-			_ = g.db.AtualizarDadosConversa(inst.ID, chatJID.String(), nome, numero, "", ehGrupo)
+		// Resolve com o resolvedor para garantir PushName, Nome de Canal e Foto de Perfil
+		resolvido := g.ResolverInfoContato(context.Background(), inst.ID, chatJID, nome)
+		nomeFinal := resolvido.Nome
+		if nomeFinal == "" {
+			nomeFinal = nome
 		}
+		if nomeFinal == "" {
+			nomeFinal = numero
+		}
+		fotoURL := resolvido.FotoURL
+
+		_ = g.db.AtualizarDadosConversa(inst.ID, chatJID.String(), nomeFinal, numero, fotoURL, resolvido.EhGrupo)
 
 		// Processa mensagens historicas contidas nesta conversa
 		if inst.Cliente != nil {
