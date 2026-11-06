@@ -132,6 +132,21 @@ func (g *GerenciadorDB) CriarTabelasChat() error {
 	// Limpeza de foto_url inválidas (ex: nomes de arquivo diretos do WhatsApp como .jpg salvos sem esquema HTTP)
 	_, _ = g.db.Exec(`UPDATE chat_conversas SET foto_url = '' WHERE foto_url != '' AND foto_url NOT LIKE 'http%' AND foto_url NOT LIKE 'data:%'`)
 
+	// Limpeza global de conversas espúrias (LIDs e contatos sem histórico que vieram de grupos)
+	_, _ = g.db.Exec(`DELETE FROM chat_conversas WHERE chat_jid LIKE '%@lid'`)
+	_, _ = g.db.Exec(`
+		DELETE FROM chat_conversas 
+		WHERE (eh_grupo = 0 OR eh_grupo IS NULL)
+		  AND chat_jid NOT LIKE '%@g.us'
+		  AND chat_jid NOT LIKE '%@newsletter'
+		  AND NOT EXISTS (
+			  SELECT 1 FROM chat_mensagens 
+			  WHERE chat_mensagens.instancia_id = chat_conversas.instancia_id 
+			    AND chat_mensagens.chat_jid = chat_conversas.chat_jid
+		  )
+	`)
+	_, _ = g.db.Exec(`UPDATE chat_conversas SET eh_grupo = 1, numero_telefone = '' WHERE chat_jid LIKE '%@g.us'`)
+
 	return nil
 }
 
