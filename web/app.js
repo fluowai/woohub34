@@ -1,4 +1,4 @@
-// ==========================================================================
+﻿// ==========================================================================
 // WOOHUB API - FRONTEND CONTROLLER ULTRA COMPLETO (TIERS 01, 02 E 03)
 // ==========================================================================
 
@@ -1370,37 +1370,197 @@ function abrirModalWebhook(id, urlAtual, segredoAtual) {
   document.getElementById('modal-webhook').classList.add('aberto');
 }
 
+let resendDominiosCache = [];
+
 async function carregarConfiguracaoResend() {
   try {
     const res = await fetchAutenticado('/api/v1/revenda/email');
     const json = await res.json();
     const badge = document.getElementById('resend-status-badge');
+    const badgeModo = document.getElementById('resend-badge-modo');
+    const btnConectar = document.getElementById('btn-conectar-resend');
+    const helperCloudflare = document.getElementById('resend-cloudflare-helper');
     const cfg = json.dados && json.dados.configuracao;
+
     if (json.sucesso && cfg) {
       document.getElementById('resend-dominio').value = cfg.dominio || '';
       document.getElementById('resend-remetente').value = cfg.remetente || '';
       document.getElementById('resend-nome').value = cfg.nome_remetente || '';
-      if (badge) { badge.className = 'badge-status-pill online'; badge.innerText = cfg.verificado ? '● Verificado' : '● Configurado'; }
-    } else if (badge) { badge.className = 'badge-status-pill offline'; badge.innerText = '● Não configurado'; }
-  } catch (err) { mostrarNotificacaoToast('Não foi possível carregar o Resend: ' + err.message, 'erro'); }
+      if (badge) {
+        badge.className = 'badge-status-pill online';
+        badge.innerText = cfg.verificado ? '● Verificado' : '● Configurado';
+      }
+      if (badgeModo) {
+        if (cfg.metodo_auth === 'oauth') {
+          badgeModo.className = 'badge-status-pill online';
+          badgeModo.innerText = '● Conectado via OAuth';
+          if (btnConectar) btnConectar.innerHTML = '<span>🔄</span> Reconectar conta Resend';
+        } else {
+          badgeModo.className = 'badge-status-pill';
+          badgeModo.style.background = '#e2e8f0';
+          badgeModo.style.color = '#475569';
+          badgeModo.innerText = 'API Key manual';
+        }
+      }
+
+      if (cfg.dominios_json) {
+        try {
+          const doms = JSON.parse(cfg.dominios_json);
+          renderizarSelectDominiosResend(doms, cfg.dominio);
+        } catch (_) {}
+      }
+
+      if (helperCloudflare) {
+        helperCloudflare.style.display = cfg.verificado ? 'none' : 'block';
+      }
+    } else {
+      if (badge) { badge.className = 'badge-status-pill offline'; badge.innerText = '● Não configurado'; }
+      if (badgeModo) { badgeModo.className = 'badge-status-pill offline'; badgeModo.innerText = 'Não vinculado'; }
+      if (helperCloudflare) helperCloudflare.style.display = 'none';
+    }
+  } catch (err) {
+    mostrarNotificacaoToast('Não foi possível carregar o Resend: ' + err.message, 'erro');
+  }
 }
 
-async function salvarConfiguracaoResend() {
-  const payload = {
-    api_key: document.getElementById('resend-api-key').value.trim(),
-    dominio: document.getElementById('resend-dominio').value.trim(),
-    remetente: document.getElementById('resend-remetente').value.trim(),
-    nome_remetente: document.getElementById('resend-nome').value.trim()
-  };
-  if (!payload.api_key || !payload.remetente) { mostrarNotificacaoToast('Informe a API Key e o e-mail remetente.', 'aviso'); return; }
+function renderizarSelectDominiosResend(dominios, dominioAtual) {
+  const container = document.getElementById('resend-grupo-dominios');
+  const select = document.getElementById('resend-select-dominio');
+  if (!container || !select) return;
+
+  if (!dominios || dominios.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+
+  resendDominiosCache = dominios;
+  container.style.display = 'block';
+  select.innerHTML = '<option value="">Selecione um domínio verificado...</option>';
+
+  dominios.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.name;
+    const statusLabel = d.status === 'verified' ? '✅ Verificado (Cloudflare/DNS OK)' : '⏳ Pendente no DNS';
+    opt.innerText = `${d.name} (${statusLabel})`;
+    if (dominioAtual && d.name.toLowerCase() === dominioAtual.toLowerCase()) {
+      opt.selected = true;
+    }
+    select.appendChild(opt);
+  });
+}
+
+function selecionarDominioResend(dominio) {
+  if (!dominio) return;
+  document.getElementById('resend-dominio').value = dominio;
+  const remInput = document.getElementById('resend-remetente');
+  if (!remInput.value || remInput.value.includes('@')) {
+    const partes = remInput.value.split('@');
+    const prefixo = partes[0] || 'contato';
+    remInput.value = `${prefixo}@${dominio}`;
+  }
+  const achado = resendDominiosCache.find(d => d.name.toLowerCase() === dominio.toLowerCase());
+  const helperCloudflare = document.getElementById('resend-cloudflare-helper');
+  if (helperCloudflare && achado) {
+    helperCloudflare.style.display = achado.status === 'verified' ? 'none' : 'block';
+  }
+}
+
+async function sincronizarDominiosResend() {
   try {
-    const res = await fetchAutenticado('/api/v1/revenda/email', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    mostrarNotificacaoToast('Sincronizando domínios com o Resend...', 'aviso');
+    const res = await fetchAutenticado('/api/v1/revenda/email/dominios');
     const json = await res.json();
-    if (!json.sucesso) { mostrarNotificacaoToast(json.erro || 'Erro ao salvar Resend.', 'erro'); return; }
+    if (!json.sucesso) {
+      mostrarNotificacaoToast(json.erro || 'Erro ao sincronizar domínios.', 'erro');
+      return;
+    }
+    renderizarSelectDominiosResend(json.dados.dominios, document.getElementById('resend-dominio').value);
+    mostrarNotificacaoToast('Domínios atualizados com sucesso.', 'sucesso');
+    carregarConfiguracaoResend();
+  } catch (err) {
+    mostrarNotificacaoToast('Erro ao sincronizar: ' + err.message, 'erro');
+  }
+}
+
+async function iniciarConexaoResendOAuth() {
+  try {
+    mostrarNotificacaoToast('Iniciando autorização com Resend...', 'aviso');
+    const res = await fetchAutenticado('/api/v1/revenda/email/oauth/iniciar');
+    const json = await res.json();
+    if (!json.sucesso) {
+      mostrarNotificacaoToast(json.erro || 'Falha ao iniciar OAuth do Resend.', 'erro');
+      return;
+    }
+
+    if (!json.dados.oauth_configurado) {
+      const modalMsg = json.dados.mensagem || 'Para login 1-clique, adicione RESEND_OAUTH_CLIENT_ID no arquivo .env.';
+      mostrarNotificacaoToast(modalMsg, 'aviso');
+      const detManual = document.getElementById('resend-detalhes-manual');
+      if (detManual) {
+        detManual.open = true;
+        document.getElementById('resend-api-key').focus();
+      }
+      return;
+    }
+
+    const largura = 600, altura = 720;
+    const esquerda = (window.screen.width / 2) - (largura / 2);
+    const topo = (window.screen.height / 2) - (altura / 2);
+    const popup = window.open(json.dados.url, 'ResendOAuth', `width=${largura},height=${altura},top=${topo},left=${esquerda},scrollbars=yes`);
+    if (!popup) {
+      window.location.href = json.dados.url;
+    }
+  } catch (err) {
+    mostrarNotificacaoToast('Erro ao conectar com Resend: ' + err.message, 'erro');
+  }
+}
+
+window.addEventListener('message', (evento) => {
+  if (evento && evento.data && evento.data.tipo === 'resend_oauth_concluido') {
+    if (evento.data.sucesso) {
+      mostrarNotificacaoToast('⚡ Conta do Resend conectada com sucesso!', 'sucesso');
+      carregarConfiguracaoResend();
+    } else {
+      mostrarNotificacaoToast('Falha na autorização do Resend.', 'erro');
+    }
+  }
+});
+
+async function salvarConfiguracaoResend() {
+  const apiKey = document.getElementById('resend-api-key').value.trim();
+  const dominio = document.getElementById('resend-dominio').value.trim();
+  const remetente = document.getElementById('resend-remetente').value.trim();
+  const nomeRemetente = document.getElementById('resend-nome').value.trim();
+
+  if (!dominio || !remetente) {
+    mostrarNotificacaoToast('Informe o domínio e o e-mail remetente.', 'aviso');
+    return;
+  }
+
+  const payload = {
+    api_key: apiKey,
+    dominio: dominio,
+    remetente: remetente,
+    nome_remetente: nomeRemetente
+  };
+
+  try {
+    const res = await fetchAutenticado('/api/v1/revenda/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+    if (!json.sucesso) {
+      mostrarNotificacaoToast(json.erro || 'Erro ao salvar Resend.', 'erro');
+      return;
+    }
     document.getElementById('resend-api-key').value = '';
     mostrarNotificacaoToast('Configuração do Resend salva com sucesso.', 'sucesso');
     carregarConfiguracaoResend();
-  } catch (err) { mostrarNotificacaoToast('Erro ao salvar Resend: ' + err.message, 'erro'); }
+  } catch (err) {
+    mostrarNotificacaoToast('Erro ao salvar Resend: ' + err.message, 'erro');
+  }
 }
 
 async function testarConfiguracaoResend() {

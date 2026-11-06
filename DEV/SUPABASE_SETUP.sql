@@ -173,3 +173,57 @@ CREATE TABLE IF NOT EXISTS atribuicoes_contato (
 );
 
 CREATE INDEX IF NOT EXISTS idx_atribuicoes_contato_busca ON atribuicoes_contato(instancia_id, jid);
+
+
+-- ============================================================================
+-- 11. TABELAS DO WHATSAPP WEB CLONE (web.wooapi.com.br) & SUPER-PODERES
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS chat_conversas (
+    id TEXT PRIMARY KEY,
+    instancia_id TEXT NOT NULL REFERENCES instancias(id) ON DELETE CASCADE,
+    chat_jid TEXT NOT NULL,
+    nome_contato TEXT DEFAULT '',
+    foto_url TEXT DEFAULT '',
+    ultima_mensagem TEXT DEFAULT '',
+    ultimo_timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    tipo_ultima_msg TEXT DEFAULT 'texto',
+    nao_lidas INTEGER DEFAULT 0,
+    eh_grupo INTEGER DEFAULT 0,
+    arquivado INTEGER DEFAULT 0,
+    fixado INTEGER DEFAULT 0,
+    atualizado_em TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (instancia_id, chat_jid)
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_conversas_instancia ON chat_conversas(instancia_id, atualizado_em);
+
+CREATE TABLE IF NOT EXISTS chat_mensagens (
+    id TEXT PRIMARY KEY,
+    instancia_id TEXT NOT NULL REFERENCES instancias(id) ON DELETE CASCADE,
+    chat_jid TEXT NOT NULL,
+    remetente_jid TEXT NOT NULL,
+    de_mim INTEGER DEFAULT 0,
+    tipo TEXT NOT NULL,
+    texto TEXT DEFAULT '',
+    midia_url TEXT DEFAULT '',
+    mimetype TEXT DEFAULT '',
+    nome_arquivo TEXT DEFAULT '',
+    status TEXT DEFAULT 'PENDENTE',
+    deletada_remetente INTEGER DEFAULT 0,
+    resposta_de_id TEXT DEFAULT '',
+    criado_em TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_mensagens_busca ON chat_mensagens(instancia_id, chat_jid, criado_em);
+
+CREATE TABLE IF NOT EXISTS chat_respostas_rapidas (
+    id TEXT PRIMARY KEY,
+    cliente_id TEXT NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+    atalho TEXT NOT NULL,
+    texto TEXT NOT NULL,
+    categoria TEXT DEFAULT 'Geral',
+    criado_em TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_respostas_cliente ON chat_respostas_rapidas(cliente_id);

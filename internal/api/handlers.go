@@ -215,6 +215,8 @@ func ExigirAutenticacao(proximo http.HandlerFunc) http.HandlerFunc {
 
 func rotaConfiguraInfraestrutura(path string) bool {
 	return strings.HasPrefix(path, "/api/v1/revenda/infra") ||
+		strings.HasPrefix(path, "/api/v1/revenda/email") ||
+		path == "/api/v1/onboarding" ||
 		path == "/api/v1/revenda/marca" ||
 		path == "/api/v1/auth/logout" ||
 		path == "/api/v1/auth/me" ||

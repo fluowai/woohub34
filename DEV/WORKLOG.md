@@ -1,5 +1,81 @@
-# Diário de Bordo (Worklog) - WooHub API
-
+# Diário de Bordo (Worklog) - WooHub API
+
+## [2026-11-05] Conexão 1-Clique Resend OAuth 2.1 e Sincronização Cloudflare Domain Connect
+
+### Diagnóstico e Visão Geral
+- **Objetivo:** Permitir que o revendedor conecte sua conta do Resend ao WooHub em 1 clique via OAuth 2.1 com PKCE (RFC 7636), eliminando a necessidade de copiar e colar chaves API `re_...` manualmente.
+- **Analogia Cloudflare:** Reproduz a mesma experiência nativa do Resend com a Cloudflare (Domain Connect), onde o usuário clica em "Conectar", autoriza na tela de consentimento e tem os domínios verificados e remetentes sincronizados instantaneamente.
+
+### Implementações Realizadas
+1. **Pacote de E-mail (`internal/email/resend.go`):**
+   - Implementado `GerarPKCE()` com `code_verifier` e `code_challenge` (S256 base64url).
+   - Implementado `ConstruirURLAutorizacao()` montando o link com escopo `full_access` para `https://resend.com/oauth/authorize`.
+   - Implementado `TrocarCodigoOAuth()` para troca de authorization_code por Access Token e Refresh Token.
+   - Implementado `ListarDominios()` consumindo `GET https://api.resend.com/domains` para trazer domínios e status DNS.
+2. **Banco de Dados (`internal/database/db.go`):**
+   - Adicionadas colunas `metodo_auth`, `token_refresh` e `dominios_json` na tabela `configuracoes_email_revenda`.
+   - Atualizados métodos `BuscarConfiguracaoEmailRevenda` e `SalvarConfiguracaoEmailRevenda`.
+3. **Rotas e Controladores da API (`internal/api/handlers_email_onboarding.go` e `routes.go`):**
+   - `GET /api/v1/revenda/email/oauth/iniciar`: Gera parâmetros PKCE e URL de autorização.
+   - `GET /api/v1/revenda/email/oauth/callback`: Recebe retorno do consentimento, troca token, sincroniza domínios e salva revenda.
+   - `GET /api/v1/revenda/email/dominios`: Sincroniza em tempo real os domínios da conta Resend.
+   - Liberadas rotas de e-mail e onboarding no gatekeeper de infraestrutura (`rotaConfiguraInfraestrutura` em `handlers.go`).
+4. **Interface do Painel (`web/index.html` e `web/app.js`):**
+   - Novo card de destaque com botão `⚡ Conectar com Resend (1 clique)`.
+   - Seletor dinâmico de domínios verificados da conta do revendedor.
+   - Banner de orientação e link direto para o Cloudflare Domain Connect no Resend caso o domínio esteja com DNS pendente.
+   - Modo de fallback com detalhes expansíveis para API Key manual preservado.
+   - Listener de `window.postMessage` para recarregar o painel automaticamente após autorização no popup.
+
+### Verificação & Testes
+- `internal/email/resend_test.go`: Validação de PKCE, parâmetros de autorização e envio.
+- `internal/api/api_test.go` (`TestResendOAuthControleAcessoEDominios`): Validação de controle de acesso (cliente final 403, revendedor 200) e listagem de domínios.
+- Suíte `go test ./internal/database` e `go test ./internal/email`: PASS.
+- Compilação global `go build ./...`: SUCESSO.
+
+## [2026-11-05] Implementação do WhatsApp Web Clone com Super-Poderes da API (web.wooapi.com.br)
+
+### Diagnóstico e Visão Geral
+- **Objetivo Comercial e Estratégico:** Criação do cliente oficial **WooAPI Web** (web.wooapi.com.br e rotas /chat / /webchat), entregando a interface e usabilidade clássica do WhatsApp Web oficial, potencializada com os super-poderes da API desbloqueados de acordo com o plano contratado do cliente (Starter, Business Pro ou Enterprise White-Label).
+- **Subdomínio & Roteamento Dinâmico em Go:**
+  - Em [internal/api/routes.go](file:///c:/Users/paulo/whatsmeow/internal/api/routes.go), requisições cujo Host comece com web. (ex: web.wooapi.com.br ou subdomínios white-label de revendedores como web.revenda.com.br) ou que acessem /chat ou /webchat entregam diretamente a SPA do WhatsApp Web (chat.html) com status 200 OK e UTF-8.
+  - Atualizada a política de segurança Permissions-Policy em middlewareSegurancaCORS para liberar microphone=(self), permitindo gravação e envio nativo de notas de voz PTT (Microfone Verde).
+
+### Arquitetura de Dados & Realtime
+- **Tabelas do Banco de Dados (internal/database/db_chat.go e DEV/SUPABASE_SETUP.sql):**
+  - chat_conversas: Armazena a lista de contatos/chats com foto, nome, última mensagem, timestamp, contador de não lidas (
+ao_lidas) e flags de grupo, fixado e arquivado.
+  - chat_mensagens: Histórico de mensagens recebidas e enviadas com tipo (texto, áudio, mídia, documento, enquete), URL de mídia (MinIO/S3), status (ENVIADA, ENTREGUE, LIDA) e flag deletada_remetente para o recurso **Ghost Mode**.
+  - chat_respostas_rapidas: Snippets e atalhos (/pix, /ola, /horario) cadastrados por cliente com limite governado por plano.
+- **Broadcasting em Tempo Real (internal/core/chat_hub.go):**
+  - Implementado o HubChatGlobal (HubChatWeb), permitindo que operadores conectados via Server-Sent Events (SSE em /api/v1/chat/stream?instancia_id=...) recebam mensagens, confirmações de leitura (✓✓ azuis), avisos de presença (*digitando... / gravando áudio...*) e notificações de mensagens apagadas instantaneamente sem latência.
+- **Gatilhos no Ciclo de Vida do WhatsApp:**
+  - Em [internal/core/funcionalidades_avancadas.go](file:///c:/Users/paulo/whatsmeow/internal/core/funcionalidades_avancadas.go), mensagens recebidas são persistidas automaticamente em chat_mensagens e transmitidas ao HubChatGlobal.
+  - Detecção de ProtocolMessage_REVOKE ativando o **Ghost Mode**: quando o contato apaga a mensagem no WhatsApp, o backend marca deletada_remetente = 1 e notifica o frontend, mantendo o texto visível ao atendente com badge de aviso.
+  - Em [internal/core/instance_manager.go](file:///c:/Users/paulo/whatsmeow/internal/core/instance_manager.go), eventos events.Receipt atualizam o status das mensagens para ENTREGUE ou LIDA em tempo real.
+
+### Interface Web & Super-Poderes por Plano
+- **Interface WhatsApp Web (web/chat.html, web/chat.css, web/chat.js):**
+  - Design pixel-perfect idêntico ao WhatsApp Web (Dark mode padrão, balões verdes/brancos, wallpaper clássico de doodle, status ticks, player de áudio PTT com waveform).
+  - Seletor rápido de instâncias conectadas e QR Code interativo embutido se a instância estiver desconectada.
+  - **Super-Poderes Integrados:**
+    - ⚡ **Respostas Rápidas (/atalhos)**: Popover dinâmico ao digitar / no campo de texto para envio instantâneo.
+    - 🔘 **Botões Interativos & Listas**: Modal integrado para disparo de mensagens com botões e enquetes.
+    - 🕒 **Agendamento**: Agendamento de retornos e mensagens.
+    - 🎙️ **Gravador de Áudio PTT**: Gravação direta via Web Audio API e envio com microfone verde oficial.
+    - 🔒 **Gatekeeper de Planos**: Bloqueio amigável com alerta visual para recursos não permitidos no plano atual do cliente (Starter vs Pro vs Enterprise).
+- **Embutimento no Executável Go (web/embed.go):**
+  - Inclusão dos novos arquivos estáticos (chat.html, chat.css, chat.js) no binário Go compilado (//go:embed), preservando a distribuição de binário único blindado.
+- **Link no Painel Geral (web/index.html):**
+  - Adicionado atalho direto na barra lateral WhatsApp Web ↗ para acesso rápido com um clique.
+
+### Verificação & Testes
+- **Testes Unitários da API:**
+  - Implementados TestWhatsAppWebChatRoutes e TestChatRecursosPlanoEAtalhos em [internal/api/api_test.go](file:///c:/Users/paulo/whatsmeow/internal/api/api_test.go), validando entrega de HTML via rotas /chat, /webchat, subdomínio web.wooapi.com.br, retorno de recursos por plano e CRUD de respostas rápidas.
+  - Suíte completa de testes da API executada e aprovada com 100% de sucesso (ok go.mau.fi/whatsmeow/internal/api 8.196s).
+- **Compilação do Binário Final:**
+  - Binário ./bin/woohub-api.exe compilado com sucesso (30.7 MB).
+
 ## [2026-11-05] Aplicação de 15% de Desconto Estratégico em Relação à Uazapi
 
 ### Diagnóstico e Resoluções

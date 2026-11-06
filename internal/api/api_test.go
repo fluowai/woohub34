@@ -591,3 +591,150 @@ func TestIsolamentoTresNiveisMegaRevendaCliente(t *testing.T) {
 
 
 
+
+
+func TestWhatsAppWebChatRoutes(t *testing.T) {
+	rotas := ConfigurarRotas("../../web")
+
+	// 1. Acesso a /chat e /webchat entrega chat.html com 200 OK
+	rotasChat := []string{"/chat", "/webchat"}
+	for _, rota := range rotasChat {
+		req := httptest.NewRequest(http.MethodGet, rota, nil)
+		rec := httptest.NewRecorder()
+		rotas.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Esperava 200 OK para rota %s, mas recebeu %d", rota, rec.Code)
+		}
+		contentType := rec.Header().Get("Content-Type")
+		if !strings.Contains(contentType, "text/html") {
+			t.Fatalf("Esperava Content-Type text/html para %s, mas recebeu %s", rota, contentType)
+		}
+		body := rec.Body.String()
+		if !strings.Contains(body, "WooAPI Web") || !strings.Contains(body, "chat.js") {
+			t.Fatalf("Corpo retornado não parece ser o WhatsApp Web (chat.html) para %s", rota)
+		}
+	}
+
+	// 2. Acesso via subdomínio web.wooapi.com.br
+	reqSub := httptest.NewRequest(http.MethodGet, "/", nil)
+	reqSub.Host = "web.wooapi.com.br"
+	recSub := httptest.NewRecorder()
+	rotas.ServeHTTP(recSub, reqSub)
+	if recSub.Code != http.StatusOK {
+		t.Fatalf("Esperava 200 OK para Host web.wooapi.com.br, mas recebeu %d", recSub.Code)
+	}
+	if !strings.Contains(recSub.Body.String(), "WooAPI Web") {
+		t.Fatalf("Subdomínio web.wooapi.com.br deveria entregar o WhatsApp Web (chat.html)")
+	}
+}
+
+func TestChatRecursosPlanoEAtalhos(t *testing.T) {
+	rotas := prepararAmbienteTeste(t)
+
+	// 1. Gera token autenticado
+	_, token, err := database.DB.AutenticarUsuario("admin@woohub.com.br", "SenhaForteAdmin!2026")
+	if err != nil {
+		t.Fatalf("Falha ao autenticar usuario de teste: %v", err)
+	}
+
+	// 2. Testa endpoint /api/v1/chat/recursos
+	reqRec := httptest.NewRequest(http.MethodGet, "/api/v1/chat/recursos", nil)
+	reqRec.Header.Set("Authorization", "Bearer "+token)
+	recRec := httptest.NewRecorder()
+	rotas.ServeHTTP(recRec, reqRec)
+
+	if recRec.Code != http.StatusOK {
+		t.Fatalf("Esperava 200 em /api/v1/chat/recursos, recebeu %d", recRec.Code)
+	}
+	var respRec struct {
+		Sucesso  bool              `json:"sucesso"`
+		Recursos RecursosPlanoChat `json:"recursos"`
+	}
+	if err := json.Unmarshal(recRec.Body.Bytes(), &respRec); err != nil {
+		t.Fatalf("Erro ao decodificar JSON de recursos: %v", err)
+	}
+	if !respRec.Recursos.RespostasRapidas {
+		t.Fatalf("Esperava respostas rápidas ativas para o plano")
+	}
+
+	// 3. Testa CRUD de Respostas Rápidas (/api/v1/chat/respostas-rapidas)
+	bodyCriar := `{"atalho": "/pix", "texto": "Chave PIX: financeiro@wooapi.com.br"}`
+	reqCriar := httptest.NewRequest(http.MethodPost, "/api/v1/chat/respostas-rapidas", strings.NewReader(bodyCriar))
+	reqCriar.Header.Set("Authorization", "Bearer "+token)
+	reqCriar.Header.Set("Content-Type", "application/json")
+	recCriar := httptest.NewRecorder()
+	rotas.ServeHTTP(recCriar, reqCriar)
+
+	if recCriar.Code != http.StatusOK {
+		t.Fatalf("Esperava 200 ao cadastrar resposta rápida, recebeu %d: %s", recCriar.Code, recCriar.Body.String())
+	}
+
+	// Listar respostas rápidas
+	reqList := httptest.NewRequest(http.MethodGet, "/api/v1/chat/respostas-rapidas", nil)
+	reqList.Header.Set("Authorization", "Bearer "+token)
+	recList := httptest.NewRecorder()
+	rotas.ServeHTTP(recList, reqList)
+
+	if recList.Code != http.StatusOK {
+		t.Fatalf("Esperava 200 ao listar respostas rápidas, recebeu %d", recList.Code)
+	}
+	var respList struct {
+		Sucesso bool                         `json:"sucesso"`
+		Total   int                          `json:"total"`
+		Atalhos []database.RespostaRapidaChat `json:"atalhos"`
+	}
+	_ = json.Unmarshal(recList.Body.Bytes(), &respList)
+	if respList.Total == 0 {
+		t.Fatalf("Esperava ao menos 1 resposta rápida cadastrada")
+	}
+}
+
+func TestResendOAuthControleAcessoEDominios(t *testing.T) {
+	rotas := prepararAmbienteTeste(t)
+
+	// 1. Criar revendedor e usuario revendedor
+	rev, err := database.DB.CriarRevendedor("Revenda OAuth Resend", "slug-resend", "resend.com.br", "#10B981", 50)
+	if err != nil {
+		t.Fatalf("Erro ao criar revenda: %v", err)
+	}
+	_, err = database.DB.CriarUsuarioRevendedor(rev.ID, "Admin Resend", "admin@resend-teste.com", "Senha!2026", 50)
+	if err != nil {
+		t.Fatalf("Erro ao criar usuario revendedor: %v", err)
+	}
+
+	// 2. Criar cliente final e autenticar
+	_, err = database.DB.CriarCliente(rev.ID, "Cliente Resend", "cli@resend-teste.com", "SenhaCli!2026", "123", 5)
+	if err != nil {
+		t.Fatalf("Erro ao criar cliente: %v", err)
+	}
+	_, tokenCli, _ := database.DB.AutenticarUsuario("cli@resend-teste.com", "SenhaCli!2026")
+	_, tokenRev, _ := database.DB.AutenticarUsuario("admin@resend-teste.com", "Senha!2026")
+
+	// 3. Cliente final tenta iniciar OAuth do Resend -> 403 Forbidden
+	reqCli := httptest.NewRequest(http.MethodGet, "/api/v1/revenda/email/oauth/iniciar", nil)
+	reqCli.Header.Set("Authorization", "Bearer "+tokenCli)
+	recCli := httptest.NewRecorder()
+	rotas.ServeHTTP(recCli, reqCli)
+	if recCli.Code != http.StatusForbidden {
+		t.Errorf("Cliente final deveria receber 403, recebeu: %d (%s)", recCli.Code, recCli.Body.String())
+	}
+
+	// 4. Revendedor inicia OAuth do Resend -> 200 OK
+	reqRev := httptest.NewRequest(http.MethodGet, "/api/v1/revenda/email/oauth/iniciar", nil)
+	reqRev.Header.Set("Authorization", "Bearer "+tokenRev)
+	recRev := httptest.NewRecorder()
+	rotas.ServeHTTP(recRev, reqRev)
+	if recRev.Code != http.StatusOK {
+		t.Errorf("Revendedor deveria receber 200, recebeu: %d (%s)", recRev.Code, recRev.Body.String())
+	}
+
+	// 5. Revendedor tenta listar dominios antes de configurar Resend -> 400 Bad Request
+	reqDom := httptest.NewRequest(http.MethodGet, "/api/v1/revenda/email/dominios", nil)
+	reqDom.Header.Set("Authorization", "Bearer "+tokenRev)
+	recDom := httptest.NewRecorder()
+	rotas.ServeHTTP(recDom, reqDom)
+	if recDom.Code != http.StatusBadRequest {
+		t.Errorf("Deveria retornar 400 avisando para configurar Resend primeiro, recebeu: %d (%s)", recDom.Code, recDom.Body.String())
+	}
+}

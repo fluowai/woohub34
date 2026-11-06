@@ -110,27 +110,25 @@ func HandlerListarConversasChat(w http.ResponseWriter, r *http.Request) {
 		responderErro(w, http.StatusMethodNotAllowed, "Método não permitido")
 		return
 	}
-	cli, _ := validarAutenticacao(r)
 	instanciaID := r.URL.Query().Get("instancia_id")
 	if instanciaID == "" {
 		responderErro(w, http.StatusBadRequest, "Parâmetro 'instancia_id' é obrigatório")
 		return
 	}
 
-	if err := validarPropriedadeInstancia(cli, instanciaID); err != nil {
-		responderErro(w, http.StatusForbidden, err.Error())
+	if _, ok := validarPropriedadeInstanciaPorID(w, r, instanciaID); !ok {
 		return
 	}
 
-	conversas, err := db.ListarConversasChat(instanciaID, 150)
+	conversas, err := database.DB.ListarConversasChat(instanciaID, 150)
 	if err != nil {
 		responderErro(w, http.StatusInternalServerError, "Erro ao listar conversas: "+err.Error())
 		return
 	}
 
 	// Se a lista de conversas do chat estiver vazia, sincroniza com os contatos salvos no SQLite do whatsmeow
-	if len(conversas) == 0 {
-		if inst, _ := gerenciador.ObterInstanciaAtiva(instanciaID); inst != nil && inst.Cliente != nil && inst.Cliente.Store != nil {
+	if len(conversas) == 0 && core.Gerenciador != nil {
+		if inst, _ := core.Gerenciador.ObterInstanciaAtiva(instanciaID); inst != nil && inst.Cliente != nil && inst.Cliente.Store != nil {
 			if contatos, errCont := inst.Cliente.Store.Contacts.GetAllContacts(r.Context()); errCont == nil {
 				count := 0
 				for jid, info := range contatos {
@@ -142,7 +140,7 @@ func HandlerListarConversasChat(w http.ResponseWriter, r *http.Request) {
 						if nome == "" {
 							nome = jid.User
 						}
-						c, _ := db.ObterOuCriarConversaChat(instanciaID, jid.String(), nome, false)
+						c, _ := database.DB.ObterOuCriarConversaChat(instanciaID, jid.String(), nome, false)
 						if c != nil {
 							conversas = append(conversas, *c)
 							count++
@@ -166,7 +164,6 @@ func HandlerListarMensagensChat(w http.ResponseWriter, r *http.Request) {
 		responderErro(w, http.StatusMethodNotAllowed, "Método não permitido")
 		return
 	}
-	cli, _ := validarAutenticacao(r)
 	instanciaID := r.URL.Query().Get("instancia_id")
 	chatJID := r.URL.Query().Get("chat_jid")
 
@@ -175,19 +172,18 @@ func HandlerListarMensagensChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := validarPropriedadeInstancia(cli, instanciaID); err != nil {
-		responderErro(w, http.StatusForbidden, err.Error())
+	if _, ok := validarPropriedadeInstanciaPorID(w, r, instanciaID); !ok {
 		return
 	}
 
-	mensagens, err := db.ListarMensagensChat(instanciaID, chatJID, 200)
+	mensagens, err := database.DB.ListarMensagensChat(instanciaID, chatJID, 200)
 	if err != nil {
 		responderErro(w, http.StatusInternalServerError, "Erro ao listar mensagens: "+err.Error())
 		return
 	}
 
 	// Zera contador de não lidas ao abrir a conversa
-	_ = db.ZerarNaoLidasConversa(instanciaID, chatJID)
+	_ = database.DB.ZerarNaoLidasConversa(instanciaID, chatJID)
 
 	responderJSON(w, http.StatusOK, map[string]interface{}{
 		"sucesso":   true,
@@ -254,7 +250,6 @@ func HandlerMarcarConversaLida(w http.ResponseWriter, r *http.Request) {
 		responderErro(w, http.StatusMethodNotAllowed, "Método não permitido")
 		return
 	}
-	cli, _ := validarAutenticacao(r)
 	var body struct {
 		InstanciaID string `json:"instancia_id"`
 		ChatJID     string `json:"chat_jid"`
@@ -263,14 +258,13 @@ func HandlerMarcarConversaLida(w http.ResponseWriter, r *http.Request) {
 		responderErro(w, http.StatusBadRequest, "JSON inválido")
 		return
 	}
-	if err := validarPropriedadeInstancia(cli, body.InstanciaID); err != nil {
-		responderErro(w, http.StatusForbidden, err.Error())
+	if _, ok := validarPropriedadeInstanciaPorID(w, r, body.InstanciaID); !ok {
 		return
 	}
 
-	_ = db.ZerarNaoLidasConversa(body.InstanciaID, body.ChatJID)
+	_ = database.DB.ZerarNaoLidasConversa(body.InstanciaID, body.ChatJID)
 	responderJSON(w, http.StatusOK, map[string]interface{}{
-		"sucesso": true,
+		"sucesso":  true,
 		"mensagem": "Conversa marcada como lida",
 	})
 }
@@ -287,7 +281,7 @@ func HandlerListarRespostasRapidas(w http.ResponseWriter, r *http.Request) {
 		clienteID = cli.ID
 	}
 
-	lista, err := db.ListarRespostasRapidas(clienteID)
+	lista, err := database.DB.ListarRespostasRapidas(clienteID)
 	if err != nil {
 		responderErro(w, http.StatusInternalServerError, "Erro ao buscar respostas rápidas: "+err.Error())
 		return
@@ -342,7 +336,7 @@ func HandlerSalvarRespostaRapida(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validação de limite por plano
-	existentes, _ := db.ListarRespostasRapidas(clienteID)
+	existentes, _ := database.DB.ListarRespostasRapidas(clienteID)
 	if len(existentes) >= recursos.MaxRespostasRapidas && body.ID == "" {
 		responderErro(w, http.StatusForbidden, fmt.Sprintf("Seu plano (%s) permite até %d respostas rápidas. Faça upgrade para aumentar o limite.", recursos.NomePlano, recursos.MaxRespostasRapidas))
 		return
@@ -357,7 +351,7 @@ func HandlerSalvarRespostaRapida(w http.ResponseWriter, r *http.Request) {
 		CriadoEm:  time.Now(),
 	}
 
-	if err := db.SalvarRespostaRapida(resp); err != nil {
+	if err := database.DB.SalvarRespostaRapida(resp); err != nil {
 		responderErro(w, http.StatusInternalServerError, "Erro ao salvar resposta rápida: "+err.Error())
 		return
 	}
@@ -394,7 +388,7 @@ func HandlerExcluirRespostaRapida(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.ExcluirRespostaRapida(clienteID, id); err != nil {
+	if err := database.DB.ExcluirRespostaRapida(clienteID, id); err != nil {
 		responderErro(w, http.StatusInternalServerError, "Erro ao excluir: "+err.Error())
 		return
 	}

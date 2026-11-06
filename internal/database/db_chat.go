@@ -1,7 +1,6 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -57,7 +56,7 @@ type RespostaRapidaChat struct {
 // CriarTabelasChat inicializa o esquema de tabelas do Web Chat
 func (g *GerenciadorDB) CriarTabelasChat() error {
 	tipoDataHora := "DATETIME"
-	if g.tipo == TipoPostgres {
+	if g.driver == "postgres" {
 		tipoDataHora = "TIMESTAMPTZ"
 	}
 

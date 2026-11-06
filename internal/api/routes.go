@@ -134,10 +134,30 @@ func ConfigurarRotas(caminhoWeb string) http.Handler {
 	mux.HandleFunc("/api/v1/integracoes/kommo/webhook", HandlerWebhookReversoKommo)
 	mux.HandleFunc("/api/v1/integracoes/rdstation/webhook", HandlerWebhookReversoRDStation)
 
+	// 8.2. WhatsApp Web Clone (web.wooapi.com.br) & Super-Poderes da API
+	mux.HandleFunc("/api/v1/chat/recursos", ExigirAutenticacao(HandlerRecursosPlanoChat))
+	mux.HandleFunc("/api/v1/chat/conversas", ExigirAutenticacao(HandlerListarConversasChat))
+	mux.HandleFunc("/api/v1/chat/mensagens", ExigirAutenticacao(HandlerListarMensagensChat))
+	mux.HandleFunc("/api/v1/chat/stream", HandlerStreamChatWeb)
+	mux.HandleFunc("/api/v1/chat/lido", ExigirAutenticacao(HandlerMarcarConversaLida))
+	mux.HandleFunc("/api/v1/chat/respostas-rapidas", ExigirAutenticacao(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			HandlerListarRespostasRapidas(w, r)
+		} else if r.Method == http.MethodPost {
+			HandlerSalvarRespostaRapida(w, r)
+		} else if r.Method == http.MethodDelete {
+			HandlerExcluirRespostaRapida(w, r)
+		} else {
+			responderErro(w, http.StatusMethodNotAllowed, "Método não permitido")
+		}
+	}))
+	mux.HandleFunc("/api/v1/midia/local", HandlerMidiaLocal)
+
 	// 9. Servidor de Arquivos Estáticos e SPA Fallback do Painel de Controle
 	var fs http.Handler
 	var lerIndexHTML func() ([]byte, error)
 	var lerDocsHTML func() ([]byte, error)
+	var lerChatHTML func() ([]byte, error)
 
 	if info, err := os.Stat(filepath.Join(caminhoWeb, "index.html")); err == nil && !info.IsDir() {
 		fs = http.FileServer(http.Dir(caminhoWeb))
@@ -147,6 +167,9 @@ func ConfigurarRotas(caminhoWeb string) http.Handler {
 		lerDocsHTML = func() ([]byte, error) {
 			return os.ReadFile(filepath.Join(caminhoWeb, "docs.html"))
 		}
+		lerChatHTML = func() ([]byte, error) {
+			return os.ReadFile(filepath.Join(caminhoWeb, "chat.html"))
+		}
 	} else {
 		fs = http.FileServer(http.FS(web.ArquivosEmbutidos))
 		lerIndexHTML = func() ([]byte, error) {
@@ -155,6 +178,9 @@ func ConfigurarRotas(caminhoWeb string) http.Handler {
 		lerDocsHTML = func() ([]byte, error) {
 			return web.ArquivosEmbutidos.ReadFile("docs.html")
 		}
+		lerChatHTML = func() ([]byte, error) {
+			return web.ArquivosEmbutidos.ReadFile("chat.html")
+		}
 	}
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -162,6 +188,7 @@ func ConfigurarRotas(caminhoWeb string) http.Handler {
 			responderErro(w, http.StatusNotFound, "Endpoint de API não encontrado")
 			return
 		}
+		caminhoLimpo := strings.TrimSuffix(r.URL.Path, "/")
 		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
@@ -179,19 +206,43 @@ func ConfigurarRotas(caminhoWeb string) http.Handler {
 			return
 		}
 
-		// 9.1 Rota Pública de Documentação Oficial (/docs ou /documentacao)
-		// Aberta a qualquer visitante sem necessidade de autenticação, suportando 3 idiomas (PT-BR, EN, ES) e MCP
-		caminhoLimpo := strings.TrimSuffix(r.URL.Path, "/")
-		if caminhoLimpo == "/docs" || caminhoLimpo == "/documentacao" {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			conteudo, err := lerDocsHTML()
-			if err == nil && len(conteudo) > 0 {
-				w.WriteHeader(http.StatusOK)
-				_, _ = w.Write(conteudo)
-				return
-			}
-		}
-
+		// 9.0 WhatsApp Web Clone: Se o Host começar com "web." (ex: web.wooapi.com.br, web.localhost)
+		// OU se o caminho for /chat ou /webchat -> entrega a SPA do WhatsApp Web (chat.html)
+		ehSubdominioWeb := strings.HasPrefix(strings.ToLower(r.Host), "web.")
+		if ehSubdominioWeb || caminhoLimpo == "/chat" || caminhoLimpo == "/webchat" {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			conteudo, err := lerChatHTML()
+			if err == nil && len(conteudo) > 0 {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write(conteudo)
+				return
+			}
+		}
+
+		// 9.1 Rota Pública de Documentação Oficial (/docs ou /documentacao)
+
+		// Aberta a qualquer visitante sem necessidade de autenticação, suportando 3 idiomas (PT-BR, EN, ES) e MCP
+
+		if caminhoLimpo == "/docs" || caminhoLimpo == "/documentacao" {
+
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+			conteudo, err := lerDocsHTML()
+
+			if err == nil && len(conteudo) > 0 {
+
+				w.WriteHeader(http.StatusOK)
+
+				_, _ = w.Write(conteudo)
+
+				return
+
+			}
+
+		}
+
+
+
 		// Rota SPA (ex: /testador, /planos, /revendedores, /whitelabel, /logs ou /):
 		// Entrega sempre index.html com charset UTF-8 e status 200 para o router frontend renderizar
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -215,7 +266,7 @@ func middlewareSegurancaCORS(proximo http.Handler) http.Handler {
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; base-uri 'self'; frame-ancestors 'self'; object-src 'none'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https: wss: ws:;")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+		w.Header().Set("Permissions-Policy", "camera=(), microphone=(self), geolocation=()")
 
 		origemReq := r.Header.Get("Origin")
 		origemPermitida := ""
