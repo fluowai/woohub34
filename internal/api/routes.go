@@ -137,6 +137,7 @@ func ConfigurarRotas(caminhoWeb string) http.Handler {
 	// 8.2. WhatsApp Web Clone (web.wooapi.com.br) & Super-Poderes da API
 	mux.HandleFunc("/api/v1/chat/recursos", ExigirAutenticacao(HandlerRecursosPlanoChat))
 	mux.HandleFunc("/api/v1/chat/conversas", ExigirAutenticacao(HandlerListarConversasChat))
+	mux.HandleFunc("/api/v1/chat/sincronizar", ExigirAutenticacao(HandlerChatSincronizar))
 	mux.HandleFunc("/api/v1/chat/mensagens", ExigirAutenticacao(HandlerListarMensagensChat))
 	mux.HandleFunc("/api/v1/chat/stream", HandlerStreamChatWeb)
 	mux.HandleFunc("/api/v1/chat/lido", ExigirAutenticacao(HandlerMarcarConversaLida))

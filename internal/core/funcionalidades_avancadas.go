@@ -1251,11 +1251,23 @@ func (g *GerenciadorInstancias) tratarEventoMensagemCompleta(v *events.Message, 
 	if urlParaSalvar == "" && caminhoSalvo != "" {
 		urlParaSalvar = "/api/v1/midia/local?path=" + filepath.Base(caminhoSalvo)
 	}
+	resolvido := g.ResolverInfoContato(context.Background(), inst.ID, v.Info.Chat, v.Info.PushName)
+	remetenteResolvido := g.ResolverInfoContato(context.Background(), inst.ID, v.Info.Sender, v.Info.PushName)
+	remetenteNomeFinal := v.Info.PushName
+	if remetenteNomeFinal == "" {
+		remetenteNomeFinal = remetenteResolvido.Nome
+	}
+	if remetenteNomeFinal == "" {
+		remetenteNomeFinal = remetenteResolvido.Numero
+	}
+
 	msgChatWeb := database.MensagemChat{
 		ID:           v.Info.ID,
 		InstanciaID:  inst.ID,
 		ChatJID:      v.Info.Chat.String(),
-		RemetenteJID: v.Info.Sender.String(),
+		RemetenteJID:    v.Info.Sender.String(),
+		RemetenteNome:   remetenteNomeFinal,
+		RemetenteNumero: remetenteResolvido.Numero,
 		DeMim:        v.Info.IsFromMe,
 		Tipo:         tipoMensagem,
 		Texto:        texto,
@@ -1265,7 +1277,7 @@ func (g *GerenciadorInstancias) tratarEventoMensagemCompleta(v *events.Message, 
 		Status:       statusInicial,
 		CriadoEm:     v.Info.Timestamp,
 	}
-	_ = g.db.SalvarMensagemChat(msgChatWeb)
+	_ = g.db.SalvarMensagemChatComContato(msgChatWeb, resolvido.Nome, resolvido.Numero, resolvido.FotoURL, resolvido.EhGrupo)
 	HubChatGlobal.Transmitir(EventoChatWeb{
 		Tipo:        "nova_mensagem",
 		InstanciaID: inst.ID,

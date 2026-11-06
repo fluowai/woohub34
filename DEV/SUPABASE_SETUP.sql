@@ -227,3 +227,8 @@ CREATE TABLE IF NOT EXISTS chat_respostas_rapidas (
 );
 
 CREATE INDEX IF NOT EXISTS idx_chat_respostas_cliente ON chat_respostas_rapidas(cliente_id);
+
+-- Migrações de enriquecimento para WhatsApp Web (Número Real, Capa de Grupo e Remetente)
+ALTER TABLE chat_conversas ADD COLUMN IF NOT EXISTS numero_telefone TEXT DEFAULT '';
+ALTER TABLE chat_mensagens ADD COLUMN IF NOT EXISTS remetente_nome TEXT DEFAULT '';
+ALTER TABLE chat_mensagens ADD COLUMN IF NOT EXISTS remetente_numero TEXT DEFAULT '';

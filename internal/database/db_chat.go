@@ -10,19 +10,20 @@ import (
 
 // ConversaChat representa um chat na lista do WhatsApp Web
 type ConversaChat struct {
-	ID             string    `json:"id"`
-	InstanciaID    string    `json:"instancia_id"`
-	ChatJID        string    `json:"chat_jid"`
-	NomeContato    string    `json:"nome_contato"`
-	FotoURL        string    `json:"foto_url"`
-	UltimaMensagem string    `json:"ultima_mensagem"`
+	ID              string    `json:"id"`
+	InstanciaID     string    `json:"instancia_id"`
+	ChatJID         string    `json:"chat_jid"`
+	NomeContato     string    `json:"nome_contato"`
+	NumeroTelefone  string    `json:"numero_telefone"`
+	FotoURL         string    `json:"foto_url"`
+	UltimaMensagem  string    `json:"ultima_mensagem"`
 	UltimoTimestamp time.Time `json:"ultimo_timestamp"`
-	TipoUltimaMsg  string    `json:"tipo_ultima_msg"`
-	NaoLidas       int       `json:"nao_lidas"`
-	EhGrupo        bool      `json:"eh_grupo"`
-	Arquivado      bool      `json:"arquivado"`
-	Fixado         bool      `json:"fixado"`
-	AtualizadoEm   time.Time `json:"atualizado_em"`
+	TipoUltimaMsg   string    `json:"tipo_ultima_msg"`
+	NaoLidas        int       `json:"nao_lidas"`
+	EhGrupo         bool      `json:"eh_grupo"`
+	Arquivado       bool      `json:"arquivado"`
+	Fixado          bool      `json:"fixado"`
+	AtualizadoEm    time.Time `json:"atualizado_em"`
 }
 
 // MensagemChat representa uma mensagem enviada ou recebida no chat
@@ -31,6 +32,8 @@ type MensagemChat struct {
 	InstanciaID       string    `json:"instancia_id"`
 	ChatJID           string    `json:"chat_jid"`
 	RemetenteJID      string    `json:"remetente_jid"`
+	RemetenteNome     string    `json:"remetente_nome"`
+	RemetenteNumero   string    `json:"remetente_numero"`
 	DeMim             bool      `json:"de_mim"`
 	Tipo              string    `json:"tipo"`
 	Texto             string    `json:"texto"`
@@ -66,6 +69,7 @@ func (g *GerenciadorDB) CriarTabelasChat() error {
 			instancia_id TEXT NOT NULL,
 			chat_jid TEXT NOT NULL,
 			nome_contato TEXT DEFAULT '',
+			numero_telefone TEXT DEFAULT '',
 			foto_url TEXT DEFAULT '',
 			ultima_mensagem TEXT DEFAULT '',
 			ultimo_timestamp %s DEFAULT CURRENT_TIMESTAMP,
@@ -84,6 +88,8 @@ func (g *GerenciadorDB) CriarTabelasChat() error {
 			instancia_id TEXT NOT NULL,
 			chat_jid TEXT NOT NULL,
 			remetente_jid TEXT NOT NULL,
+			remetente_nome TEXT DEFAULT '',
+			remetente_numero TEXT DEFAULT '',
 			de_mim INTEGER DEFAULT 0,
 			tipo TEXT NOT NULL,
 			texto TEXT DEFAULT '',
@@ -117,11 +123,22 @@ func (g *GerenciadorDB) CriarTabelasChat() error {
 			return err
 		}
 	}
+
+	// Migrações seguras para tabelas pré-existentes (PostgreSQL e SQLite)
+	_, _ = g.db.Exec(`ALTER TABLE chat_conversas ADD COLUMN numero_telefone TEXT DEFAULT ''`)
+	_, _ = g.db.Exec(`ALTER TABLE chat_mensagens ADD COLUMN remetente_nome TEXT DEFAULT ''`)
+	_, _ = g.db.Exec(`ALTER TABLE chat_mensagens ADD COLUMN remetente_numero TEXT DEFAULT ''`)
+
 	return nil
 }
 
 // SalvarMensagemChat persiste mensagem enviada ou recebida e atualiza a conversa correspondente
 func (g *GerenciadorDB) SalvarMensagemChat(msg MensagemChat) error {
+	return g.SalvarMensagemChatComContato(msg, "", "", "", strings.Contains(msg.ChatJID, "@g.us"))
+}
+
+// SalvarMensagemChatComContato persiste mensagem e enriquece os metadados do contato ou grupo
+func (g *GerenciadorDB) SalvarMensagemChatComContato(msg MensagemChat, nomeContato, numeroTelefone, fotoURL string, ehGrupo bool) error {
 	if msg.ID == "" {
 		msg.ID = "msg_" + uuid.New().String()[:16]
 	}
@@ -140,13 +157,13 @@ func (g *GerenciadorDB) SalvarMensagemChat(msg MensagemChat) error {
 
 	// Tenta inserção com substituição segura
 	queryMsg := `INSERT INTO chat_mensagens (
-		id, instancia_id, chat_jid, remetente_jid, de_mim, tipo,
+		id, instancia_id, chat_jid, remetente_jid, remetente_nome, remetente_numero, de_mim, tipo,
 		texto, midia_url, mimetype, nome_arquivo, status,
 		deletada_remetente, resposta_de_id, criado_em
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	if _, err := g.exec(queryMsg,
-		msg.ID, msg.InstanciaID, msg.ChatJID, msg.RemetenteJID, deMimInt, msg.Tipo,
+		msg.ID, msg.InstanciaID, msg.ChatJID, msg.RemetenteJID, msg.RemetenteNome, msg.RemetenteNumero, deMimInt, msg.Tipo,
 		msg.Texto, msg.MidiaURL, msg.MimeType, msg.NomeArquivo, msg.Status,
 		delInt, msg.RespostaDeID, msg.CriadoEm,
 	); err != nil {
@@ -154,9 +171,11 @@ func (g *GerenciadorDB) SalvarMensagemChat(msg MensagemChat) error {
 		_, _ = g.exec(`UPDATE chat_mensagens SET
 			status = ?,
 			midia_url = CASE WHEN ? != '' THEN ? ELSE midia_url END,
+			remetente_nome = CASE WHEN ? != '' THEN ? ELSE remetente_nome END,
+			remetente_numero = CASE WHEN ? != '' THEN ? ELSE remetente_numero END,
 			deletada_remetente = ?
 			WHERE id = ?`,
-			msg.Status, msg.MidiaURL, msg.MidiaURL, delInt, msg.ID,
+			msg.Status, msg.MidiaURL, msg.MidiaURL, msg.RemetenteNome, msg.RemetenteNome, msg.RemetenteNumero, msg.RemetenteNumero, delInt, msg.ID,
 		)
 	}
 
@@ -185,9 +204,8 @@ func (g *GerenciadorDB) SalvarMensagemChat(msg MensagemChat) error {
 		}
 	}
 
-	ehGrupo := strings.Contains(msg.ChatJID, "@g.us")
 	ehGrupoInt := 0
-	if ehGrupo {
+	if ehGrupo || strings.Contains(msg.ChatJID, "@g.us") {
 		ehGrupoInt = 1
 	}
 
@@ -195,6 +213,10 @@ func (g *GerenciadorDB) SalvarMensagemChat(msg MensagemChat) error {
 	incrementoNaoLida := 0
 	if !msg.DeMim {
 		incrementoNaoLida = 1
+	}
+
+	if nomeContato == "" {
+		nomeContato = msg.ChatJID
 	}
 
 	// Verifica se a conversa já existe
@@ -208,24 +230,75 @@ func (g *GerenciadorDB) SalvarMensagemChat(msg MensagemChat) error {
 			ultimo_timestamp = ?,
 			tipo_ultima_msg = ?,
 			nao_lidas = nao_lidas + ?,
+			nome_contato = CASE WHEN ? != '' AND ? != chat_jid THEN ? ELSE nome_contato END,
+			numero_telefone = CASE WHEN ? != '' THEN ? ELSE numero_telefone END,
+			foto_url = CASE WHEN ? != '' THEN ? ELSE foto_url END,
+			eh_grupo = CASE WHEN ? = 1 THEN 1 ELSE eh_grupo END,
 			atualizado_em = ?
 			WHERE instancia_id = ? AND chat_jid = ?`,
-			resumoTexto, msg.CriadoEm, msg.Tipo, incrementoNaoLida, msg.CriadoEm,
+			resumoTexto, msg.CriadoEm, msg.Tipo, incrementoNaoLida,
+			nomeContato, nomeContato, nomeContato,
+			numeroTelefone, numeroTelefone,
+			fotoURL, fotoURL,
+			ehGrupoInt,
+			msg.CriadoEm,
 			msg.InstanciaID, msg.ChatJID,
 		)
 	} else {
 		_, _ = g.exec(`INSERT INTO chat_conversas (
-			id, instancia_id, chat_jid, nome_contato, foto_url,
+			id, instancia_id, chat_jid, nome_contato, numero_telefone, foto_url,
 			ultima_mensagem, ultimo_timestamp, tipo_ultima_msg,
 			nao_lidas, eh_grupo, arquivado, fixado, atualizado_em
-		) VALUES (?, ?, ?, ?, '', ?, ?, ?, ?, ?, 0, 0, ?)`,
-			convID, msg.InstanciaID, msg.ChatJID, msg.ChatJID,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)`,
+			convID, msg.InstanciaID, msg.ChatJID, nomeContato, numeroTelefone, fotoURL,
 			resumoTexto, msg.CriadoEm, msg.Tipo,
 			incrementoNaoLida, ehGrupoInt, msg.CriadoEm,
 		)
 	}
 
 	return nil
+}
+
+// AtualizarDadosConversa atualiza o nome, número ou foto de uma conversa
+func (g *GerenciadorDB) AtualizarDadosConversa(instanciaID, chatJID, nomeContato, numeroTelefone, fotoURL string, ehGrupo bool) error {
+	ehGrupoInt := 0
+	if ehGrupo || strings.Contains(chatJID, "@g.us") {
+		ehGrupoInt = 1
+	}
+	convID := fmt.Sprintf("%s:%s", instanciaID, chatJID)
+	agora := time.Now()
+
+	var existe int
+	row := g.queryRow(`SELECT COUNT(*) FROM chat_conversas WHERE instancia_id = ? AND chat_jid = ?`, instanciaID, chatJID)
+	_ = row.Scan(&existe)
+
+	if existe > 0 {
+		_, err := g.exec(`UPDATE chat_conversas SET
+			nome_contato = CASE WHEN ? != '' THEN ? ELSE nome_contato END,
+			numero_telefone = CASE WHEN ? != '' THEN ? ELSE numero_telefone END,
+			foto_url = CASE WHEN ? != '' THEN ? ELSE foto_url END,
+			eh_grupo = CASE WHEN ? = 1 THEN 1 ELSE eh_grupo END,
+			atualizado_em = ?
+			WHERE instancia_id = ? AND chat_jid = ?`,
+			nomeContato, nomeContato,
+			numeroTelefone, numeroTelefone,
+			fotoURL, fotoURL,
+			ehGrupoInt,
+			agora,
+			instanciaID, chatJID,
+		)
+		return err
+	}
+
+	_, err := g.exec(`INSERT INTO chat_conversas (
+		id, instancia_id, chat_jid, nome_contato, numero_telefone, foto_url,
+		ultima_mensagem, ultimo_timestamp, tipo_ultima_msg,
+		nao_lidas, eh_grupo, arquivado, fixado, atualizado_em
+	) VALUES (?, ?, ?, ?, ?, ?, '', ?, 'texto', 0, ?, 0, 0, ?)`,
+		convID, instanciaID, chatJID, nomeContato, numeroTelefone, fotoURL,
+		agora, ehGrupoInt, agora,
+	)
+	return err
 }
 
 // AtualizarStatusMensagemChat atualiza recibos (ENTREGUE, LIDA)
@@ -246,7 +319,7 @@ func (g *GerenciadorDB) ListarConversasChat(instanciaID string, limite int) ([]C
 		limite = 100
 	}
 	rows, err := g.query(`
-		SELECT id, instancia_id, chat_jid, COALESCE(nome_contato, ''), COALESCE(foto_url, ''),
+		SELECT id, instancia_id, chat_jid, COALESCE(nome_contato, ''), COALESCE(numero_telefone, ''), COALESCE(foto_url, ''),
 		       COALESCE(ultima_mensagem, ''), ultimo_timestamp, COALESCE(tipo_ultima_msg, 'texto'),
 		       nao_lidas, eh_grupo, arquivado, fixado, atualizado_em
 		FROM chat_conversas
@@ -264,7 +337,7 @@ func (g *GerenciadorDB) ListarConversasChat(instanciaID string, limite int) ([]C
 		var c ConversaChat
 		var ehGrupoInt, arqInt, fixInt int
 		if err := rows.Scan(
-			&c.ID, &c.InstanciaID, &c.ChatJID, &c.NomeContato, &c.FotoURL,
+			&c.ID, &c.InstanciaID, &c.ChatJID, &c.NomeContato, &c.NumeroTelefone, &c.FotoURL,
 			&c.UltimaMensagem, &c.UltimoTimestamp, &c.TipoUltimaMsg,
 			&c.NaoLidas, &ehGrupoInt, &arqInt, &fixInt, &c.AtualizadoEm,
 		); err == nil {
@@ -278,9 +351,9 @@ func (g *GerenciadorDB) ListarConversasChat(instanciaID string, limite int) ([]C
 }
 
 // ObterOuCriarConversaChat busca ou cria o registro de uma conversa
-func (g *GerenciadorDB) ObterOuCriarConversaChat(instanciaID, chatJID, nomeContato string, ehGrupo bool) (*ConversaChat, error) {
+func (g *GerenciadorDB) ObterOuCriarConversaChat(instanciaID, chatJID, nomeContato, numeroTelefone, fotoURL string, ehGrupo bool) (*ConversaChat, error) {
 	row := g.queryRow(`
-		SELECT id, instancia_id, chat_jid, COALESCE(nome_contato, ''), COALESCE(foto_url, ''),
+		SELECT id, instancia_id, chat_jid, COALESCE(nome_contato, ''), COALESCE(numero_telefone, ''), COALESCE(foto_url, ''),
 		       COALESCE(ultima_mensagem, ''), ultimo_timestamp, COALESCE(tipo_ultima_msg, 'texto'),
 		       nao_lidas, eh_grupo, arquivado, fixado, atualizado_em
 		FROM chat_conversas
@@ -290,7 +363,7 @@ func (g *GerenciadorDB) ObterOuCriarConversaChat(instanciaID, chatJID, nomeConta
 	var c ConversaChat
 	var ehGrupoInt, arqInt, fixInt int
 	err := row.Scan(
-		&c.ID, &c.InstanciaID, &c.ChatJID, &c.NomeContato, &c.FotoURL,
+		&c.ID, &c.InstanciaID, &c.ChatJID, &c.NomeContato, &c.NumeroTelefone, &c.FotoURL,
 		&c.UltimaMensagem, &c.UltimoTimestamp, &c.TipoUltimaMsg,
 		&c.NaoLidas, &ehGrupoInt, &arqInt, &fixInt, &c.AtualizadoEm,
 	)
@@ -298,9 +371,21 @@ func (g *GerenciadorDB) ObterOuCriarConversaChat(instanciaID, chatJID, nomeConta
 		c.EhGrupo = ehGrupoInt == 1
 		c.Arquivado = arqInt == 1
 		c.Fixado = fixInt == 1
-		if nomeContato != "" && c.NomeContato != nomeContato {
+		modificado := false
+		if nomeContato != "" && c.NomeContato != nomeContato && nomeContato != chatJID {
 			c.NomeContato = nomeContato
-			_, _ = g.exec(`UPDATE chat_conversas SET nome_contato = ? WHERE id = ?`, nomeContato, c.ID)
+			modificado = true
+		}
+		if numeroTelefone != "" && c.NumeroTelefone != numeroTelefone {
+			c.NumeroTelefone = numeroTelefone
+			modificado = true
+		}
+		if fotoURL != "" && c.FotoURL != fotoURL {
+			c.FotoURL = fotoURL
+			modificado = true
+		}
+		if modificado {
+			_, _ = g.exec(`UPDATE chat_conversas SET nome_contato = ?, numero_telefone = ?, foto_url = ? WHERE id = ?`, c.NomeContato, c.NumeroTelefone, c.FotoURL, c.ID)
 		}
 		return &c, nil
 	}
@@ -308,7 +393,7 @@ func (g *GerenciadorDB) ObterOuCriarConversaChat(instanciaID, chatJID, nomeConta
 	convID := fmt.Sprintf("%s:%s", instanciaID, chatJID)
 	agora := time.Now()
 	grpVal := 0
-	if ehGrupo {
+	if ehGrupo || strings.Contains(chatJID, "@g.us") {
 		grpVal = 1
 	}
 	if nomeContato == "" {
@@ -316,11 +401,12 @@ func (g *GerenciadorDB) ObterOuCriarConversaChat(instanciaID, chatJID, nomeConta
 	}
 
 	_, errInsert := g.exec(`INSERT INTO chat_conversas (
-		id, instancia_id, chat_jid, nome_contato, foto_url,
+		id, instancia_id, chat_jid, nome_contato, numero_telefone, foto_url,
 		ultima_mensagem, ultimo_timestamp, tipo_ultima_msg,
 		nao_lidas, eh_grupo, arquivado, fixado, atualizado_em
-	) VALUES (?, ?, ?, ?, '', '', ?, 'texto', 0, ?, 0, 0, ?)`,
-		convID, instanciaID, chatJID, nomeContato, agora, grpVal, agora,
+	) VALUES (?, ?, ?, ?, ?, ?, '', ?, 'texto', 0, ?, 0, 0, ?)`,
+		convID, instanciaID, chatJID, nomeContato, numeroTelefone, fotoURL,
+		agora, grpVal, agora,
 	)
 	if errInsert != nil {
 		return nil, errInsert
@@ -331,9 +417,11 @@ func (g *GerenciadorDB) ObterOuCriarConversaChat(instanciaID, chatJID, nomeConta
 		InstanciaID:     instanciaID,
 		ChatJID:         chatJID,
 		NomeContato:     nomeContato,
+		NumeroTelefone:  numeroTelefone,
+		FotoURL:         fotoURL,
 		UltimoTimestamp: agora,
 		TipoUltimaMsg:   "texto",
-		EhGrupo:         ehGrupo,
+		EhGrupo:         ehGrupo || grpVal == 1,
 		AtualizadoEm:    agora,
 	}, nil
 }
@@ -344,8 +432,8 @@ func (g *GerenciadorDB) ListarMensagensChat(instanciaID, chatJID string, limite 
 		limite = 100
 	}
 	rows, err := g.query(`
-		SELECT id, instancia_id, chat_jid, remetente_jid, de_mim, tipo,
-		       COALESCE(texto, ''), COALESCE(midia_url, ''), COALESCE(mimetype, ''),
+		SELECT id, instancia_id, chat_jid, remetente_jid, COALESCE(remetente_nome, ''), COALESCE(remetente_numero, ''),
+		       de_mim, tipo, COALESCE(texto, ''), COALESCE(midia_url, ''), COALESCE(mimetype, ''),
 		       COALESCE(nome_arquivo, ''), status, deletada_remetente,
 		       COALESCE(resposta_de_id, ''), criado_em
 		FROM chat_mensagens
@@ -363,9 +451,9 @@ func (g *GerenciadorDB) ListarMensagensChat(instanciaID, chatJID string, limite 
 		var m MensagemChat
 		var deMimInt, delInt int
 		if err := rows.Scan(
-			&m.ID, &m.InstanciaID, &m.ChatJID, &m.RemetenteJID, &deMimInt, &m.Tipo,
-			&m.Texto, &m.MidiaURL, &m.MimeType, &m.NomeArquivo, &m.Status,
-			&delInt, &m.RespostaDeID, &m.CriadoEm,
+			&m.ID, &m.InstanciaID, &m.ChatJID, &m.RemetenteJID, &m.RemetenteNome, &m.RemetenteNumero,
+			&deMimInt, &m.Tipo, &m.Texto, &m.MidiaURL, &m.MimeType,
+			&m.NomeArquivo, &m.Status, &delInt, &m.RespostaDeID, &m.CriadoEm,
 		); err == nil {
 			m.DeMim = deMimInt == 1
 			m.DeletadaRemetente = delInt == 1
@@ -375,16 +463,16 @@ func (g *GerenciadorDB) ListarMensagensChat(instanciaID, chatJID string, limite 
 	return lista, nil
 }
 
-// ZerarNaoLidasConversa zera o contador de mensagens não lidas
+// ZerarNaoLidasConversa zera o contador de não lidas ao abrir a conversa
 func (g *GerenciadorDB) ZerarNaoLidasConversa(instanciaID, chatJID string) error {
 	_, err := g.exec(`UPDATE chat_conversas SET nao_lidas = 0 WHERE instancia_id = ? AND chat_jid = ?`, instanciaID, chatJID)
 	return err
 }
 
-// ListarRespostasRapidas lista snippets salvos da conta
+// ListarRespostasRapidas lista snippets cadastrados pelo cliente
 func (g *GerenciadorDB) ListarRespostasRapidas(clienteID string) ([]RespostaRapidaChat, error) {
 	rows, err := g.query(`
-		SELECT id, cliente_id, atalho, texto, COALESCE(categoria, 'Geral'), criado_em
+		SELECT id, cliente_id, atalho, texto, categoria, criado_em
 		FROM chat_respostas_rapidas
 		WHERE cliente_id = ?
 		ORDER BY atalho ASC
@@ -404,21 +492,34 @@ func (g *GerenciadorDB) ListarRespostasRapidas(clienteID string) ([]RespostaRapi
 	return lista, nil
 }
 
-// SalvarRespostaRapida cadastra ou atualiza um snippet
-func (g *GerenciadorDB) SalvarRespostaRapida(resp RespostaRapidaChat) error {
-	if resp.ID == "" {
-		resp.ID = "rr_" + uuid.New().String()[:12]
+// SalvarRespostaRapida insere ou atualiza um snippet
+func (g *GerenciadorDB) SalvarRespostaRapida(r RespostaRapidaChat) error {
+	if r.ID == "" {
+		r.ID = "snip_" + uuid.New().String()[:12]
 	}
-	if resp.CriadoEm.IsZero() {
-		resp.CriadoEm = time.Now()
+	if r.CriadoEm.IsZero() {
+		r.CriadoEm = time.Now()
 	}
-	query := `INSERT INTO chat_respostas_rapidas (id, cliente_id, atalho, texto, categoria, criado_em)
-	          VALUES (?, ?, ?, ?, ?, ?)`
-	_, err := g.exec(query, resp.ID, resp.ClienteID, resp.Atalho, resp.Texto, resp.Categoria, resp.CriadoEm)
+
+	_, err := g.exec(`
+		INSERT INTO chat_respostas_rapidas (id, cliente_id, atalho, texto, categoria, criado_em)
+		VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT(id) DO UPDATE SET
+			atalho = EXCLUDED.atalho,
+			texto = EXCLUDED.texto,
+			categoria = EXCLUDED.categoria
+	`, r.ID, r.ClienteID, r.Atalho, r.Texto, r.Categoria, r.CriadoEm)
+	if err != nil {
+		// Fallback para SQLite simples
+		_, err = g.exec(`
+			INSERT OR REPLACE INTO chat_respostas_rapidas (id, cliente_id, atalho, texto, categoria, criado_em)
+			VALUES (?, ?, ?, ?, ?, ?)
+		`, r.ID, r.ClienteID, r.Atalho, r.Texto, r.Categoria, r.CriadoEm)
+	}
 	return err
 }
 
-// ExcluirRespostaRapida remove um snippet
+// ExcluirRespostaRapida deleta snippet
 func (g *GerenciadorDB) ExcluirRespostaRapida(clienteID, id string) error {
 	_, err := g.exec(`DELETE FROM chat_respostas_rapidas WHERE cliente_id = ? AND id = ?`, clienteID, id)
 	return err

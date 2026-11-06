@@ -116,15 +116,150 @@ body {
 }
 
 .plano-badge-pill {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 800;
-  background-color: #059669;
+  background-color: #8b5cf6;
   color: #fff;
-  padding: 2px 6px;
-  border-radius: 10px;
+  padding: 2px 7px;
+  border-radius: 8px;
   cursor: pointer;
   width: fit-content;
   letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* Card Conexão WhatsApp Ativa (Destaque Nome da Instância e Número Real) */
+.card-instancia-conexao {
+  background-color: #182229;
+  border-bottom: 1px solid var(--wa-borda);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.instancia-conexao-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.status-bolinha-pulsante {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #00a884;
+  box-shadow: 0 0 8px #00a884;
+  flex-shrink: 0;
+  animation: pulsoVerde 2s infinite;
+}
+
+@keyframes pulsoVerde {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 168, 132, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(0, 168, 132, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 168, 132, 0); }
+}
+
+.status-bolinha-pulsante.desconectado {
+  background-color: #ea4335;
+  box-shadow: 0 0 8px #ea4335;
+  animation: none;
+}
+
+.instancia-texto-box {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.instancia-linha-titulo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.instancia-nome-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--wa-texto-primario);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.instancia-status-tag {
+  font-size: 0.65rem;
+  background-color: rgba(0, 168, 132, 0.2);
+  color: #00a884;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.instancia-numero-real {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #53bdeb;
+  font-family: 'Segoe UI', monospace;
+  letter-spacing: 0.5px;
+  margin-top: 1px;
+}
+
+.instancia-seletor-wrapper {
+  max-width: 130px;
+}
+
+.instancia-seletor-wrapper select {
+  width: 100%;
+  background-color: #111b21;
+  color: #e9edef;
+  border: 1px solid var(--wa-borda);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 0.75rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.contato-sublinha {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.contato-numero-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #53bdeb;
+  font-family: 'Segoe UI', monospace;
+}
+
+.item-contato-numero {
+  font-size: 0.78rem;
+  color: #53bdeb;
+  font-weight: 500;
+  font-family: 'Segoe UI', monospace;
+}
+
+.item-contato-badge-grupo {
+  font-size: 0.65rem;
+  background-color: rgba(139, 92, 246, 0.2);
+  color: #a78bfa;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.remetente-balao-nome {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #53bdeb;
+  margin-bottom: 2px;
+  display: block;
 }
 
 .seletor-instancia-box {

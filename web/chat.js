@@ -232,14 +232,15 @@ async function carregarInstancias() {
 
       select.innerHTML = '';
       if (ESTADO.instancias.length === 0) {
-        select.innerHTML = '<option value="">Nenhuma instância criada</option>';
+        select.innerHTML = '<option value="">Nenhuma instância</option>';
         return;
       }
 
       ESTADO.instancias.forEach(inst => {
         const opt = document.createElement('option');
         opt.value = inst.id;
-        opt.innerText = `${inst.status === 'CONECTADO' ? '🟢' : '🔴'} ${inst.nome || inst.id}`;
+        const numLabel = inst.numero_telefone ? ` (${inst.numero_telefone})` : '';
+        opt.innerText = `${inst.status === 'CONECTADO' ? '🟢' : '🔴'} ${inst.nome || inst.id}${numLabel}`;
         select.appendChild(opt);
       });
 
@@ -258,10 +259,32 @@ function trocarInstanciaAtiva(id) {
   if (select && select.value !== id) select.value = id;
 
   const inst = ESTADO.instancias.find(i => i.id === id);
-  if (inst && inst.status !== 'CONECTADO') {
-    exibirTelaQRCode(id);
-  } else {
-    ocultarTelaQRCode();
+  if (inst) {
+    const elNome = document.getElementById('instancia-nome-label');
+    if (elNome) elNome.innerText = inst.nome || inst.id;
+
+    const elNum = document.getElementById('instancia-numero-display');
+    if (elNum) elNum.innerText = inst.numero_telefone || 'Sem número';
+
+    const elStatus = document.getElementById('instancia-status-tag');
+    const elBolinha = document.getElementById('status-bolinha-instancia');
+    if (inst.status === 'CONECTADO') {
+      if (elStatus) {
+        elStatus.innerText = 'Conectado';
+        elStatus.style.color = '#00a884';
+        elStatus.style.backgroundColor = 'rgba(0, 168, 132, 0.2)';
+      }
+      if (elBolinha) elBolinha.className = 'status-bolinha-pulsante';
+      ocultarTelaQRCode();
+    } else {
+      if (elStatus) {
+        elStatus.innerText = 'Desconectado';
+        elStatus.style.color = '#ea4335';
+        elStatus.style.backgroundColor = 'rgba(234, 67, 53, 0.2)';
+      }
+      if (elBolinha) elBolinha.className = 'status-bolinha-pulsante desconectado';
+      exibirTelaQRCode(id);
+    }
   }
 
   // Conecta ao SSE de eventos em tempo real
@@ -269,6 +292,38 @@ function trocarInstanciaAtiva(id) {
 
   // Carrega a lista de conversas
   carregarListaConversas(id);
+}
+
+async function sincronizarWhatsAppData() {
+  const btn = document.getElementById('btn-sync-conversas');
+  if (!ESTADO.instanciaAtivaId) return;
+
+  if (btn) {
+    btn.style.animation = 'spin 0.8s linear infinite';
+    btn.disabled = true;
+  }
+
+  try {
+    const res = await fetch(`/api/v1/chat/sincronizar?instancia_id=${encodeURIComponent(ESTADO.instanciaAtivaId)}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${ESTADO.token}` },
+      credentials: 'include'
+    });
+    const dados = await res.json();
+    if (dados.sucesso && Array.isArray(dados.conversas)) {
+      ESTADO.conversas = dados.conversas;
+      renderizarListaConversas();
+    } else {
+      await carregarListaConversas(ESTADO.instanciaAtivaId);
+    }
+  } catch (e) {
+    console.error('Erro ao sincronizar conversas:', e);
+  } finally {
+    if (btn) {
+      btn.style.animation = '';
+      btn.disabled = false;
+    }
+  }
 }
 
 function conectarSSERealtime(instanciaId) {
@@ -384,6 +439,7 @@ function renderizarListaConversas() {
     const t = ESTADO.termoBusca.toLowerCase();
     filtradas = filtradas.filter(c =>
       (c.nome_contato && c.nome_contato.toLowerCase().includes(t)) ||
+      (c.numero_telefone && c.numero_telefone.toLowerCase().includes(t)) ||
       (c.chat_jid && c.chat_jid.toLowerCase().includes(t)) ||
       (c.ultima_mensagem && c.ultima_mensagem.toLowerCase().includes(t))
     );
@@ -393,7 +449,7 @@ function renderizarListaConversas() {
     container.innerHTML = `
       <div class="estado-vazio-conversas">
         <p>Nenhuma conversa encontrada.</p>
-        <button class="btn-chat-primario" onclick="abrirModalNovaConversa()" style="margin-top: 10px; font-size: 0.85rem; padding: 8px 12px;">+ Iniciar Conversa</button>
+        <button class="btn-chat-primario" onclick="sincronizarWhatsAppData()" style="margin-top: 10px; font-size: 0.85rem; padding: 8px 12px;">🔄 Sincronizar Conversas</button>
       </div>
     `;
     return;
@@ -403,20 +459,51 @@ function renderizarListaConversas() {
   filtradas.forEach(c => {
     const item = document.createElement('div');
     item.className = `item-conversa ${c.chat_jid === ESTADO.chatAtivoJid ? 'ativo' : ''}`;
-    item.onclick = () => abrirConversa(c.chat_jid, c.nome_contato || c.chat_jid);
 
-    const inicial = (c.nome_contato || c.chat_jid)[0].toUpperCase();
+    // Extração e tratamento do Número Real e Nome
+    let numeroReal = c.numero_telefone || '';
+    if (!numeroReal && c.chat_jid && c.chat_jid.endsWith('@s.whatsapp.net')) {
+      numeroReal = c.chat_jid.replace('@s.whatsapp.net', '');
+    }
+
+    let nomePrincipal = '';
+    if (c.eh_grupo) {
+      nomePrincipal = (c.nome_contato && !c.nome_contato.includes('@')) ? c.nome_contato : 'Grupo do WhatsApp';
+    } else {
+      if (c.nome_contato && !c.nome_contato.includes('@')) {
+        nomePrincipal = c.nome_contato;
+      } else if (numeroReal) {
+        nomePrincipal = numeroReal;
+      } else {
+        nomePrincipal = 'Contato WhatsApp';
+      }
+    }
+
+    item.onclick = () => abrirConversa(c.chat_jid, nomePrincipal, numeroReal, c.foto_url, c.eh_grupo);
+
     const hora = formatarHora(c.ultimo_timestamp || c.atualizado_em);
+    const inicial = (nomePrincipal || 'C')[0].toUpperCase();
+
+    const avatarHtml = c.foto_url
+      ? `<img src="${c.foto_url}" onerror="this.parentElement.innerHTML='${c.eh_grupo ? '👥' : inicial}'">`
+      : (c.eh_grupo ? '👥' : inicial);
+
+    const sublinhaContato = c.eh_grupo
+      ? `<span class="item-contato-badge-grupo">Grupo</span>`
+      : (numeroReal ? `<span class="item-contato-numero">📱 ${escaparHTML(numeroReal)}</span>` : '');
 
     item.innerHTML = `
-      <div class="avatar-circulo">${c.foto_url ? `<img src="${c.foto_url}">` : inicial}</div>
+      <div class="avatar-circulo" style="${c.eh_grupo && !c.foto_url ? 'background:#1f3536;' : ''}">${avatarHtml}</div>
       <div class="item-conversa-corpo">
         <div class="item-conversa-topo">
-          <span class="item-contato-nome">${escaparHTML(c.nome_contato || c.chat_jid)}</span>
+          <span class="item-contato-nome">${escaparHTML(nomePrincipal)}</span>
           <span class="item-timestamp">${hora}</span>
         </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          ${sublinhaContato}
+        </div>
         <div class="item-conversa-base">
-          <span class="item-snippet-msg">${escaparHTML(c.ultima_mensagem || 'Iniciar conversa...')}</span>
+          <span class="item-snippet-msg">${escaparHTML(c.ultima_mensagem || 'Conversa iniciada')}</span>
           ${c.nao_lidas > 0 ? `<span class="badge-nao-lidas">${c.nao_lidas}</span>` : ''}
         </div>
       </div>
@@ -475,7 +562,7 @@ function aplicarFiltroConversas(filtro, el) {
 // ============================================================================
 // 5. JANELA DE CONVERSA ATIVA
 // ============================================================================
-async function abrirConversa(chatJid, nomeContato) {
+async function abrirConversa(chatJid, nomeContato, numeroTelefone, fotoURL, ehGrupo) {
   ESTADO.chatAtivoJid = chatJid;
 
   // Atualiza destaque na lista lateral
@@ -490,8 +577,31 @@ async function abrirConversa(chatJid, nomeContato) {
   // Cabeçalho do contato
   const elNome = document.getElementById('chat-ativo-nome');
   if (elNome) elNome.innerText = nomeContato || chatJid;
+
+  const elNumero = document.getElementById('chat-ativo-numero');
+  if (elNumero) {
+    if (ehGrupo) {
+      elNumero.innerText = 'Grupo Oficial';
+    } else if (numeroTelefone) {
+      elNumero.innerText = numeroTelefone;
+    } else {
+      elNumero.innerText = '';
+    }
+  }
+
+  const elStatus = document.getElementById('chat-ativo-status');
+  if (elStatus) {
+    elStatus.innerText = ehGrupo ? '' : '• online';
+  }
+
   const elAvatar = document.getElementById('chat-ativo-avatar');
-  if (elAvatar) elAvatar.innerText = (nomeContato || chatJid)[0].toUpperCase();
+  if (elAvatar) {
+    if (fotoURL) {
+      elAvatar.innerHTML = `<img src="${fotoURL}" onerror="this.parentElement.innerHTML='${ehGrupo ? '👥' : (nomeContato || 'C')[0].toUpperCase()}'">`;
+    } else {
+      elAvatar.innerHTML = ehGrupo ? '👥' : (nomeContato || 'C')[0].toUpperCase();
+    }
+  }
 
   // Carrega histórico de mensagens
   const lista = document.getElementById('mensagens-lista');
@@ -571,6 +681,20 @@ function criarElementoBalao(msg) {
   balao.id = `msg-${msg.id}`;
 
   let htmlConteudo = '';
+
+  // Exibição do Nome / PushName / Número Real do Remetente em mensagens recebidas
+  if (!msg.de_mim) {
+    let remetenteTexto = msg.remetente_nome || msg.remetente_numero || '';
+    if (!remetenteTexto && msg.remetente_jid) {
+      if (msg.remetente_jid.endsWith('@s.whatsapp.net')) {
+        remetenteTexto = msg.remetente_jid.replace('@s.whatsapp.net', '');
+      }
+    }
+    // Remove qualquer JID ou resquício de @lid
+    if (remetenteTexto && !remetenteTexto.includes('@lid') && !remetenteTexto.includes('@newsletter')) {
+      htmlConteudo += `<span class="remetente-balao-nome">${escaparHTML(remetenteTexto)}</span>`;
+    }
+  }
 
   // Ghost Mode: Mensagem apagada pelo remetente
   if (msg.deletada_remetente) {

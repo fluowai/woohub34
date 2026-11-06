@@ -1,5 +1,45 @@
 # Diário de Bordo (Worklog) - WooHub API
 
+## [2026-11-06] Enriquecimento de Dados, Resolução de LIDs, Importação de Mensagens e Novo Layout do WhatsApp Web
+
+### Diagnóstico e Solicitação do Maestro
+- **Problema Relatado:** Na listagem de chats apareciam JIDs crus como `266464133132334@lid` e `120363425163494203@newsletter` sem nome, sem foto e sem número. O layout do topo da sidebar estava espremido pelo badge roxo, e o número real da conexão conectada não aparecia com destaque igual ao card do painel (`554888003260`).
+- **Objetivo:**
+  1. Exibir o **número de telefone real** estilo `5548988003260` ou `48991138937`, acompanhado do **PushName** e da **foto de perfil do telefone**.
+  2. Nos **grupos**, exibir o **nome real do grupo** e as **capas/fotos dos grupos**.
+  3. Nas **mensagens recebidas**, exibir o PushName ou o número real do remetente (nunca `@lid` cru).
+  4. Criar rotina e botão de **importação/sincronização de conversas, grupos e mensagens** do WhatsApp.
+  5. **Melhorar o layout da sidebar:** criar card dedicado para a conexão WhatsApp com bolinha pulsante verde, nome da instância, status e número real em destaque, além de ajustar o badge do plano.
+
+### Implementações Realizadas
+1. **Resolução de LIDs e Grupos (`internal/core/chat_resolver.go`):**
+   - Criada a estrutura `InfoContatoResolvido` e o método `ResolverInfoContato(ctx, instanciaID, jid, pushNameHint)`.
+   - Para `@lid` (HiddenUserServer): resolve para o número de telefone real (PN) via `store.LIDs.GetPNForLID` e consulta contatos salvos no SQLite do Whatsmeow.
+   - Para `@g.us` (Grupos): consulta `GetGroupInfo` para obter o nome real do grupo e `GetProfilePictureInfo` para puxar a capa do grupo.
+   - Para `@s.whatsapp.net`: extrai o número real de telefone, o PushName ou FullName da agenda e a foto de perfil.
+   - Criado o método `SincronizarContatosEGrupos(ctx, instanciaID)` que varre `GetJoinedGroups` e `Contacts.GetAllContacts`, resolvendo metadados e atualizando a tabela `chat_conversas`.
+2. **Banco de Dados (`internal/database/db_chat.go` e `DEV/SUPABASE_SETUP.sql`):**
+   - Adicionada coluna `numero_telefone` na tabela `chat_conversas`.
+   - Adicionadas colunas `remetente_nome` e `remetente_numero` na tabela `chat_mensagens`.
+   - Criado método `SalvarMensagemChatComContato` e `AtualizarDadosConversa`.
+   - Atualizados `ListarConversasChat` e `ListarMensagensChat` para retornar esses metadados.
+3. **Recebimento em Tempo Real (`internal/core/funcionalidades_avancadas.go`):**
+   - Ao receber mensagens, o sistema agora resolve o contato e o remetente usando `ResolverInfoContato`, gravando o PushName, o número real e a foto de capa.
+4. **Endpoint de Sincronização (`internal/api/handlers_chat.go` e `internal/api/routes.go`):**
+   - Nova rota `POST/GET /api/v1/chat/sincronizar?instancia_id=...` para importar/sincronizar sob demanda.
+   - `HandlerListarConversasChat` auto-sincroniza caso detecte conversas com `@lid` ou não resolvidas.
+5. **Layout e Interface (`web/chat.html`, `web/chat.css`, `web/chat.js`):**
+   - **Novo Card de Conexão Ativa:** Exibe bolinha pulsante verde `🟢`, nome da instância (`Homologação`), status `Conectado` e o **número real** em destaque (`554888003260`).
+   - **Botão Sincronizar WhatsApp (`🔄`):** No header da sidebar com animação de giro e reload automático.
+   - **Lista de Conversas:** Exibe foto de capa de grupos ou fotos de perfil, o Nome Real / PushName, número de telefone com ícone `📱`, badge `Grupo` para grupos e última mensagem.
+   - **Janela de Conversa Ativa:** Cabeçalho com foto, nome e número real; balões de mensagem com remetente limpo em cor de destaque.
+
+### Verificação
+- `go test -v ./internal/api -run TestChat`: PASS (0.15s).
+- `go test -v ./internal/database`: PASS (3.93s).
+- `go build -o ./bin/woohub-api.exe ./cmd/woohub-api`: SUCESSO.
+
+
 ## [2026-11-05] Correção de Autenticação e Herança de Sessão no WooAPI Web (/chat)
 
 ### Diagnóstico e Resolução

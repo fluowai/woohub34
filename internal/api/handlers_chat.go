@@ -104,6 +104,36 @@ func HandlerRecursosPlanoChat(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// HandlerChatSincronizar importa grupos, contatos, fotos e números reais para o Web Chat
+func HandlerChatSincronizar(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost && r.Method != http.MethodGet {
+		responderErro(w, http.StatusMethodNotAllowed, "Método não permitido")
+		return
+	}
+	instanciaID := r.URL.Query().Get("instancia_id")
+	if instanciaID == "" {
+		responderErro(w, http.StatusBadRequest, "Parâmetro 'instancia_id' é obrigatório")
+		return
+	}
+	if _, ok := validarPropriedadeInstanciaPorID(w, r, instanciaID); !ok {
+		return
+	}
+
+	total := 0
+	if core.Gerenciador != nil {
+		tot, _ := core.Gerenciador.SincronizarContatosEGrupos(r.Context(), instanciaID)
+		total = tot
+	}
+
+	conversas, _ := database.DB.ListarConversasChat(instanciaID, 200)
+	responderJSON(w, http.StatusOK, map[string]interface{}{
+		"sucesso":   true,
+		"mensagem":  fmt.Sprintf("%d contatos e grupos sincronizados com sucesso", total),
+		"total":     len(conversas),
+		"conversas": conversas,
+	})
+}
+
 // HandlerListarConversasChat retorna a lista de conversas da instância
 func HandlerListarConversasChat(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -120,34 +150,27 @@ func HandlerListarConversasChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conversas, err := database.DB.ListarConversasChat(instanciaID, 150)
+	conversas, err := database.DB.ListarConversasChat(instanciaID, 200)
 	if err != nil {
 		responderErro(w, http.StatusInternalServerError, "Erro ao listar conversas: "+err.Error())
 		return
 	}
 
-	// Se a lista de conversas do chat estiver vazia, sincroniza com os contatos salvos no SQLite do whatsmeow
-	if len(conversas) == 0 && core.Gerenciador != nil {
-		if inst, _ := core.Gerenciador.ObterInstanciaAtiva(instanciaID); inst != nil && inst.Cliente != nil && inst.Cliente.Store != nil {
-			if contatos, errCont := inst.Cliente.Store.Contacts.GetAllContacts(r.Context()); errCont == nil {
-				count := 0
-				for jid, info := range contatos {
-					if jid.Server == "s.whatsapp.net" && count < 30 {
-						nome := info.PushName
-						if nome == "" {
-							nome = info.FullName
-						}
-						if nome == "" {
-							nome = jid.User
-						}
-						c, _ := database.DB.ObterOuCriarConversaChat(instanciaID, jid.String(), nome, false)
-						if c != nil {
-							conversas = append(conversas, *c)
-							count++
-						}
-					}
-				}
+	// Se a lista estiver vazia ou com JIDs brutos não resolvidos (@lid ou @newsletter), sincroniza do WhatsApp
+	precisaSincronizar := len(conversas) == 0
+	if !precisaSincronizar {
+		for _, c := range conversas {
+			if strings.Contains(c.NomeContato, "@lid") || strings.Contains(c.NomeContato, "@newsletter") || c.NomeContato == c.ChatJID {
+				precisaSincronizar = true
+				break
 			}
+		}
+	}
+
+	if precisaSincronizar && core.Gerenciador != nil {
+		_, _ = core.Gerenciador.SincronizarContatosEGrupos(r.Context(), instanciaID)
+		if convsAtualizadas, errAtual := database.DB.ListarConversasChat(instanciaID, 200); errAtual == nil {
+			conversas = convsAtualizadas
 		}
 	}
 
