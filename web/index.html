@@ -218,11 +218,12 @@
           </span>
           <span class="nav-label">Auditoria e logs</span>
         </a>
-        <a class="nav-item" data-nav="docs" onclick="navegarPara('docs')">
+        <a class="nav-item" href="/docs" target="_blank" title="Abrir Documentação Oficial Pública (Tri-língue & MCP)">
           <span class="nav-ico">
             <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
           </span>
           <span class="nav-label">Documentação API</span>
+          <span style="font-size:0.65rem; background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); padding:1px 6px; border-radius:4px; margin-left:auto; font-weight:700;">Pública ↗</span>
         </a>
       </nav>
 
@@ -1362,6 +1363,17 @@
 
         <!-- SUB-PÁGINA: DOCUMENTAÇÃO API -->
         <div id="sub-docs" class="visao-bloco" style="display: none;">
+          <div style="background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(56,189,248,0.08)); border: 1px solid rgba(16,185,129,0.3); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="font-size: 0.8rem; font-weight: 800; color: #10b981; letter-spacing: 0.05em; text-transform: uppercase;">Portal de Documentação Pública Ativo</div>
+              <div style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-top: 2px;">Documentação Oficial Tri-língue (PT-BR, EN, ES) & Suporte a MCP</div>
+              <div style="font-size: 0.85rem; color: #64748b; margin-top: 2px;">Qualquer desenvolvedor ou cliente pode acessar a documentação sem login através do link público /docs.</div>
+            </div>
+            <a href="/docs" target="_blank" class="btn btn-verde" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 0.6rem 1.2rem; font-weight: 700;">
+              Abrir Documentação Pública ↗
+            </a>
+          </div>
+
           <div class="page-header">
             <div>
               <h2 class="page-title">Guia de Integração da API (Pacotes 1 a 4 • 100% Brasil)</h2>
@@ -1475,9 +1487,14 @@ POST /api/v1/instancia/{id}/configuracoes
             </button>
           </div>
 
-          <div class="card-dashboard" style="margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
-            <div><strong>Catálogo comercial</strong><p style="margin:.25rem 0 0;color:#64748b;font-size:.85rem;">Crie planos específicos para o Mega Admin ou para revendedores.</p></div>
-            <span class="badge-plano azul">Mega Admin · Revendedor</span>
+          <div class="card-dashboard" style="margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;background:#f8fafc;border-left:4px solid #059669;">
+            <div>
+              <strong style="color:#0f172a;font-size:1.05rem;">Catálogo Comercial &amp; Servidores de Revenda (WooHub &bull; 15% OFF vs Uazapi)</strong>
+              <p style="margin:.35rem 0 0;color:#475569;font-size:.85rem;line-height:1.4;">
+                🏷️ <strong>Tabela com 15% de Desconto Estratégico:</strong> Mais econômico que a concorrência com a estabilidade do motor em Go puro. ⚠️ <strong>Regra Obrigatória para Revendas (LITE e PRO):</strong> O revendedor parceiro deve obrigatoriamente fornecer as credenciais do seu próprio <strong>Supabase (PostgreSQL)</strong> e <strong>MinIO S3</strong> para isolamento total de dados e mídias (custo zero de banco e storage para a matriz).
+              </p>
+            </div>
+            <span class="badge-plano verde" style="white-space:nowrap;">15% OFF &bull; Supabase + MinIO Obrigatório</span>
           </div>
 
           <div id="grid-planos-assinaturas" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
@@ -1817,9 +1834,9 @@ POST /api/v1/instancia/{id}/configuracoes
       <div class="form-grupo">
         <label class="form-label">Plano Contratado</label>
         <select id="cli-plano-novo" class="form-input">
-          <option value="basico">Básico (Até 5 instâncias • R$ 197/mês)</option>
-          <option value="profissional" selected>Profissional (Até 20 instâncias • R$ 297/mês)</option>
-          <option value="enterprise">Enterprise (Até 50 instâncias • R$ 497/mês)</option>
+          <option value="ate_2_dispositivos">Até 2 Dispositivos (R$ 32,30/mês • 15% OFF)</option>
+          <option value="servidor_lite" selected>Servidor LITE (Até 100 dispositivos • R$ 117,30/mês • 15% OFF)</option>
+          <option value="servidor_pro">Servidor PRO (Até 300 dispositivos • R$ 165,75/mês • 15% OFF)</option>
         </select>
       </div>
 
@@ -2149,6 +2166,6 @@ POST /api/v1/instancia/{id}/configuracoes
     </div>
   </div>
 
-  <script src="app.js?v=20261105v2" charset="UTF-8"></script>
+  <script src="app.js?v=20261105v4" charset="UTF-8"></script>
 </body>
 </html>

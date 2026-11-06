@@ -35,6 +35,9 @@ func ConfigurarRotas(caminhoWeb string) http.Handler {
 	mux.HandleFunc("/api/v1/revendedor/atualizar", ExigirAutenticacao(HandlerAtualizarRevendedor))
 	mux.HandleFunc("/api/v1/revenda/email", ExigirAutenticacao(HandlerEmailRevenda))
 	mux.HandleFunc("/api/v1/revenda/email/testar", ExigirAutenticacao(HandlerTestarEmailRevenda))
+	mux.HandleFunc("/api/v1/revenda/email/oauth/iniciar", ExigirAutenticacao(HandlerEmailOAuthIniciar))
+	mux.HandleFunc("/api/v1/revenda/email/oauth/callback", HandlerEmailOAuthCallback)
+	mux.HandleFunc("/api/v1/revenda/email/dominios", ExigirAutenticacao(HandlerEmailListarDominios))
 	mux.HandleFunc("/api/v1/onboarding", ExigirAutenticacao(HandlerOnboarding))
 
 	// 3.1. Servidor Mestre de Licenças & Kill-Switch de Stacks Portainer
@@ -134,16 +137,23 @@ func ConfigurarRotas(caminhoWeb string) http.Handler {
 	// 9. Servidor de Arquivos Estáticos e SPA Fallback do Painel de Controle
 	var fs http.Handler
 	var lerIndexHTML func() ([]byte, error)
+	var lerDocsHTML func() ([]byte, error)
 
 	if info, err := os.Stat(filepath.Join(caminhoWeb, "index.html")); err == nil && !info.IsDir() {
 		fs = http.FileServer(http.Dir(caminhoWeb))
 		lerIndexHTML = func() ([]byte, error) {
 			return os.ReadFile(filepath.Join(caminhoWeb, "index.html"))
 		}
+		lerDocsHTML = func() ([]byte, error) {
+			return os.ReadFile(filepath.Join(caminhoWeb, "docs.html"))
+		}
 	} else {
 		fs = http.FileServer(http.FS(web.ArquivosEmbutidos))
 		lerIndexHTML = func() ([]byte, error) {
 			return web.ArquivosEmbutidos.ReadFile("index.html")
+		}
+		lerDocsHTML = func() ([]byte, error) {
+			return web.ArquivosEmbutidos.ReadFile("docs.html")
 		}
 	}
 
@@ -169,7 +179,20 @@ func ConfigurarRotas(caminhoWeb string) http.Handler {
 			return
 		}
 
-		// Rota SPA (ex: /testador, /planos, /revendedores, /whitelabel, /logs, /docs ou /):
+		// 9.1 Rota Pública de Documentação Oficial (/docs ou /documentacao)
+		// Aberta a qualquer visitante sem necessidade de autenticação, suportando 3 idiomas (PT-BR, EN, ES) e MCP
+		caminhoLimpo := strings.TrimSuffix(r.URL.Path, "/")
+		if caminhoLimpo == "/docs" || caminhoLimpo == "/documentacao" {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			conteudo, err := lerDocsHTML()
+			if err == nil && len(conteudo) > 0 {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write(conteudo)
+				return
+			}
+		}
+
+		// Rota SPA (ex: /testador, /planos, /revendedores, /whitelabel, /logs ou /):
 		// Entrega sempre index.html com charset UTF-8 e status 200 para o router frontend renderizar
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		conteudo, err := lerIndexHTML()

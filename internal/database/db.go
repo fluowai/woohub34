@@ -61,6 +61,9 @@ type ConfiguracaoEmailRevenda struct {
 	Dominio      string `json:"dominio"`
 	Remetente    string `json:"remetente"`
 	NomeRemetente string `json:"nome_remetente"`
+	MetodoAuth    string `json:"metodo_auth"`
+	TokenRefresh  string `json:"-"`
+	DominiosJSON  string `json:"dominios_json,omitempty"`
 	Ativo        bool `json:"ativo"`
 	Verificado   bool `json:"verificado"`
 }
@@ -508,14 +511,18 @@ func (g *GerenciadorDB) migrar() error {
 	_, _ = g.db.Exec(`ALTER TABLE revendedores ADD COLUMN minio_bucket TEXT DEFAULT 'woohub-midias'`)
 	_, _ = g.db.Exec(`ALTER TABLE revendedores ADD COLUMN minio_use_ssl INTEGER DEFAULT 1`)
 	_, _ = g.db.Exec(`ALTER TABLE revendedores ADD COLUMN minio_public_url TEXT DEFAULT ''`)
+	_, _ = g.db.Exec(`ALTER TABLE configuracoes_email_revenda ADD COLUMN metodo_auth TEXT DEFAULT 'api_key'`)
+	_, _ = g.db.Exec(`ALTER TABLE configuracoes_email_revenda ADD COLUMN token_refresh TEXT DEFAULT ''`)
+	_, _ = g.db.Exec(`ALTER TABLE configuracoes_email_revenda ADD COLUMN dominios_json TEXT DEFAULT ''`)
 	_, _ = g.exec(`UPDATE clientes SET papel = ? WHERE id = 'cli_demo_admin' OR LOWER(email) = 'admin@woohub.com.br'`, PapelSuperAdmin)
+	_ = g.CriarTabelasChat()
 
 	return nil
 }
 
 func (g *GerenciadorDB) BuscarConfiguracaoEmailRevenda(id string) (*ConfiguracaoEmailRevenda, error) {
 	var c ConfiguracaoEmailRevenda; var ativo, verificado int
-	err := g.queryRow(`SELECT revendedor_id, api_key, COALESCE(dominio,''), COALESCE(remetente,''), COALESCE(nome_remetente,''), ativo, verificado FROM configuracoes_email_revenda WHERE revendedor_id = ?`, id).Scan(&c.RevendedorID, &c.APIKey, &c.Dominio, &c.Remetente, &c.NomeRemetente, &ativo, &verificado)
+	err := g.queryRow(`SELECT revendedor_id, api_key, COALESCE(dominio,''), COALESCE(remetente,''), COALESCE(nome_remetente,''), COALESCE(metodo_auth,'api_key'), COALESCE(token_refresh,''), COALESCE(dominios_json,''), ativo, verificado FROM configuracoes_email_revenda WHERE revendedor_id = ?`, id).Scan(&c.RevendedorID, &c.APIKey, &c.Dominio, &c.Remetente, &c.NomeRemetente, &c.MetodoAuth, &c.TokenRefresh, &c.DominiosJSON, &ativo, &verificado)
 	if err != nil { return nil, err }
 	c.Ativo, c.Verificado = ativo == 1, verificado == 1
 	return &c, nil
@@ -523,7 +530,8 @@ func (g *GerenciadorDB) BuscarConfiguracaoEmailRevenda(id string) (*Configuracao
 
 func (g *GerenciadorDB) SalvarConfiguracaoEmailRevenda(c *ConfiguracaoEmailRevenda) error {
 	ativo, verificado := 0, 0; if c.Ativo { ativo = 1 }; if c.Verificado { verificado = 1 }
-	_, err := g.exec(`INSERT INTO configuracoes_email_revenda (revendedor_id, api_key, dominio, remetente, nome_remetente, ativo, verificado, atualizado_em) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT (revendedor_id) DO UPDATE SET api_key=excluded.api_key, dominio=excluded.dominio, remetente=excluded.remetente, nome_remetente=excluded.nome_remetente, ativo=excluded.ativo, verificado=excluded.verificado, atualizado_em=CURRENT_TIMESTAMP`, c.RevendedorID, c.APIKey, c.Dominio, c.Remetente, c.NomeRemetente, ativo, verificado)
+	if c.MetodoAuth == "" { c.MetodoAuth = "api_key" }
+	_, err := g.exec(`INSERT INTO configuracoes_email_revenda (revendedor_id, api_key, dominio, remetente, nome_remetente, metodo_auth, token_refresh, dominios_json, ativo, verificado, atualizado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT (revendedor_id) DO UPDATE SET api_key=excluded.api_key, dominio=excluded.dominio, remetente=excluded.remetente, nome_remetente=excluded.nome_remetente, metodo_auth=excluded.metodo_auth, token_refresh=excluded.token_refresh, dominios_json=excluded.dominios_json, ativo=excluded.ativo, verificado=excluded.verificado, atualizado_em=CURRENT_TIMESTAMP`, c.RevendedorID, c.APIKey, c.Dominio, c.Remetente, c.NomeRemetente, c.MetodoAuth, c.TokenRefresh, c.DominiosJSON, ativo, verificado)
 	return err
 }
 

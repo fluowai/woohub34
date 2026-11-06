@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"go.mau.fi/whatsmeow/internal/config"
@@ -76,7 +77,7 @@ func TestSegurancaWebhookAntiSSRF(t *testing.T) {
 func TestSPAFallbackRoutes(t *testing.T) {
 	rotas := prepararAmbienteTeste(t)
 
-	rotasSPA := []string{"/testador", "/planos", "/revendedores", "/whitelabel", "/logs", "/docs"}
+	rotasSPA := []string{"/testador", "/planos", "/revendedores", "/whitelabel", "/logs"}
 	for _, rota := range rotasSPA {
 		req := httptest.NewRequest(http.MethodGet, rota, nil)
 		rec := httptest.NewRecorder()
@@ -88,6 +89,36 @@ func TestSPAFallbackRoutes(t *testing.T) {
 		contentType := rec.Header().Get("Content-Type")
 		if !strings.Contains(contentType, "text/html") {
 			t.Errorf("Esperava text/html na rota SPA %s, obteve %s", rota, contentType)
+		}
+	}
+}
+
+func TestPublicDocumentationRoutes(t *testing.T) {
+	rotas := prepararAmbienteTeste(t)
+
+	rotasDocs := []string{"/docs", "/docs/", "/documentacao", "/documentacao/"}
+	for _, rota := range rotasDocs {
+		req := httptest.NewRequest(http.MethodGet, rota, nil)
+		rec := httptest.NewRecorder()
+		rotas.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Esperava 200 OK na rota pública de documentação %s, obteve %d", rota, rec.Code)
+		}
+		contentType := rec.Header().Get("Content-Type")
+		if !strings.Contains(contentType, "text/html") {
+			t.Errorf("Esperava text/html na rota %s, obteve %s", rota, contentType)
+		}
+
+		body := rec.Body.String()
+		if !strings.Contains(body, "WooHub API") {
+			t.Errorf("A documentação em %s não retornou o título WooHub API", rota)
+		}
+		if !strings.Contains(body, "PT-BR") || !strings.Contains(body, "EN") || !strings.Contains(body, "ES") {
+			t.Errorf("A documentação em %s deve conter suporte tri-língue (PT-BR, EN, ES)", rota)
+		}
+		if !strings.Contains(body, "Model Context Protocol") && !strings.Contains(body, "MCP") {
+			t.Errorf("A documentação em %s deve conter a seção de MCP", rota)
 		}
 	}
 }

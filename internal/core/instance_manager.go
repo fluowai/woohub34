@@ -699,15 +699,27 @@ func (g *GerenciadorInstancias) tratarEventosConexao(evt interface{}, inst *Inst
 		g.tratarEventoMensagemCompleta(v, inst)
 
 	case *events.Receipt:
-		instDB, err := g.db.BuscarInstanciaPorId(inst.ID)
-		if err != nil || instDB.WebhookURL == "" {
-			return
-		}
 		tipoStatus := "ENTREGUE"
 		if v.Type == events.ReceiptTypeRead {
 			tipoStatus = "LIDA"
 		} else if v.Type == events.ReceiptTypePlayed {
 			tipoStatus = "REPRODUZIDA"
+		}
+		for _, mID := range v.MessageIDs {
+			_ = g.db.AtualizarStatusMensagemChat(inst.ID, string(mID), tipoStatus)
+		}
+		HubChatGlobal.Transmitir(EventoChatWeb{
+			Tipo:        "status_mensagem",
+			InstanciaID: inst.ID,
+			Dados: map[string]interface{}{
+				"ids_mensagens": v.MessageIDs,
+				"chat_jid":      v.Chat.String(),
+				"status":        tipoStatus,
+			},
+		})
+		instDB, err := g.db.BuscarInstanciaPorId(inst.ID)
+		if err != nil || instDB.WebhookURL == "" {
+			return
 		}
 		g.webhook.Enviar(instDB.WebhookURL, instDB.WebhookSegredo, PayloadWebhook{
 			InstanciaID: inst.ID,

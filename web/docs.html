@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WooHub API • Documentação Oficial Pública (API & MCP)</title>
+  <meta name="description" content="Documentação Pública da WooHub API: Mensageria WhatsApp, Enquetes Interativas, Grupos, Menção Fantasma, Validador 9º Dígito BR, Blindagem Anti-Ban e Protocolo MCP para IA.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-principal: #0b1120;
+      --bg-card: #131d33;
+      --bg-card-hover: #1a2744;
+      --bg-codigo: #070d18;
+      --borda: #1e293b;
+      --borda-foco: #10b981;
+      --texto-claro: #f8fafc;
+      --texto-muted: #94a3b8;
+      --verde-sucesso: #10b981;
+      --verde-hover: #059669;
+      --azul-destaque: #38bdf8;
+      --laranja-alerta: #f59e0b;
+      --vermelho-erro: #ef4444;
+      --roxo-mcp: #8b5cf6;
+      --fonte-padrao: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --fonte-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-principal);
+      color: var(--texto-claro);
+      font-family: var(--fonte-padrao);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Topbar Fixa */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(11, 17, 32, 0.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--borda);
+      padding: 0.85rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .topbar-esquerda {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--texto-claro);
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-icone {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 1.05rem;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+    }
+
+    .badge-versao {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--verde-sucesso);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+    }
+
+    .topbar-direita {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* Seletor de Idioma */
+    .seletor-idioma {
+      display: flex;
+      background: var(--bg-card);
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .btn-idioma {
+      background: transparent;
+      border: none;
+      color: var(--texto-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-idioma:hover {
+      color: var(--texto-claro);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .btn-idioma.ativo {
+      background: var(--verde-sucesso);
+      color: #0b1120;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-painel {
+      background: transparent;
+      border: 1px solid var(--borda);
+      color: var(--texto-claro);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.45rem 1rem;
+      border-radius: 8px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-painel:hover {
+      border-color: var(--verde-sucesso);
+      color: var(--verde-sucesso);
+      background: rgba(16, 185, 129, 0.06);
+    }
+
+    /* Layout Principal */
+    .container-docs {
+      display: flex;
+      min-height: calc(100vh - 65px);
+    }
+
+    /* Sidebar de Navegação */
+    .sidebar-docs {
+      width: 290px;
+      flex-shrink: 0;
+      background: #090e1a;
+      border-right: 1px solid var(--borda);
+      padding: 1.5rem 1rem;
+      position: sticky;
+      top: 65px;
+      height: calc(100vh - 65px);
+      overflow-y: auto;
+    }
+
+    .busca-box {
+      margin-bottom: 1.25rem;
+    }
+
+    .busca-input {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.85rem;
+      color: var(--texto-claro);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .busca-input:focus {
+      border-color: var(--verde-sucesso);
+    }
+
+    .nav-grupo {
+      margin-bottom: 1.4rem;
+    }
+
+    .nav-titulo {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--texto-muted);
+      margin-bottom: 0.6rem;
+      padding-left: 0.5rem;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.45rem 0.65rem;
+      border-radius: 6px;
+      color: var(--texto-muted);
+      text-decoration: none;
+      font-size: 0.84rem;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .nav-link:hover, .nav-link.ativo {
+      color: var(--texto-claro);
+      background: var(--bg-card);
+    }
+
+    .nav-link.ativo {
+      color: var(--verde-sucesso);
+      font-weight: 600;
+      border-left: 3px solid var(--verde-sucesso);
+    }
+
+    .badge-metodo {
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: var(--fonte-mono);
+    }
+
+    .badge-post { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .badge-get { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+    .badge-mcp { background: rgba(139, 92, 246, 0.25); color: #c084fc; }
+
+    /* Área de Conteúdo */
+    .conteudo-docs {
+      flex: 1;
+      max-width: 980px;
+      padding: 2.5rem 3rem 5rem 3rem;
+      margin: 0 auto;
+    }
+
+    .secao-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--borda);
+    }
+
+    .secao-titulo {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.6rem;
+      color: var(--texto-claro);
+    }
+
+    .secao-subtitulo {
+      color: var(--texto-muted);
+      font-size: 1.05rem;
+      line-height: 1.55;
+    }
+
+    /* Cards de Endpoints & Recursos */
+    .card-endpoint {
+      background: var(--bg-card);
+      border: 1px solid var(--borda);
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card-endpoint:hover {
+      border-color: rgba(16, 185, 129, 0.35);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .endpoint-topo {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 0.85rem;
+      flex-wrap: wrap;
+    }
+
+    .endpoint-rota {
+      font-family: var(--fonte-mono);
+      font-size: 1.02rem;
+      font-weight: 600;
+      color: var(--texto-claro);
+    }
+
+    .endpoint-auth {
+      margin-left: auto;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 6px;
+      font-family: var(--fonte-mono);
+    }
+
+    .endpoint-descricao {
+      color: var(--texto-muted);
+      font-size: 0.92rem;
+      margin-bottom: 1.2rem;
+      line-height: 1.55;
+    }
+
+    /* Tabelas de Parâmetros */
+    .tabela-parametros {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1.25rem;
+      font-size: 0.84rem;
+    }
+
+    .tabela-parametros th {
+      text-align: left;
+      padding: 0.6rem 0.8rem;
+      background: rgba(0, 0, 0, 0.2);
+      color: var(--texto-muted);
+      font-weight: 700;
+      border-bottom: 1px solid var(--borda);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .tabela-parametros td {
+      padding: 0.65rem 0.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      vertical-align: top;
+    }
+
+    .param-nome {
+      font-family: var(--fonte-mono);
+      font-weight: 600;
+      color: var(--verde-sucesso);
+    }
+
+    .param-tipo {
+      font-family: var(--fonte-mono);
+      font-size: 0.75rem;
+      color: var(--azul-destaque);
+    }
+
+    .param-req {
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: var(--laranja-alerta);
+      text-transform: uppercase;
+    }
+
+    .param-opt {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--texto-muted);
+    }
+
+    /* Abas de Código & Snippets */
+    .bloco-codigo-container {
+      background: var(--bg-codigo);
+      border: 1px solid var(--borda);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+
+    .codigo-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--borda);
+    }
+
+    .codigo-abas {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .codigo-aba-btn {
+      background: transparent;
+      border: none;
+      color: var(--texto-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: var(--fonte-mono);
+    }
+
+    .codigo-aba-btn.ativo {
+      color: var(--texto-claro);
+      background: var(--bg-card);
+      border: 1px solid var(--borda);
+    }
+
+    .btn-copiar {
+      background: transparent;
+      border: 1px solid var(--borda);
+      color: var(--texto-muted);
+      font-size: 0.75rem;
+      padding: 3px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+
+    .btn-copiar:hover {
+      color: var(--texto-claro);
+      border-color: var(--verde-sucesso);
+    }
+
+    pre.codigo-snippet {
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: var(--fonte-mono);
+      font-size: 0.82rem;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+
+    /* Banner MCP */
+    .banner-mcp {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(56, 189, 248, 0.1));
+      border: 1px solid rgba(139, 92, 246, 0.35);
+      border-radius: 14px;
+      padding: 1.75rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .banner-mcp-titulo {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      color: #c084fc;
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin-bottom: 0.6rem;
+    }
+
+    .banner-mcp-tag {
+      background: rgba(139, 92, 246, 0.25);
+      color: #e9d5ff;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Responsividade */
+    @media (max-width: 900px) {
+      .sidebar-docs {
+        display: none;
+      }
+      .conteudo-docs {
+        padding: 1.5rem 1rem;
+      }
+      .topbar {
+        padding: 0.75rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOPBAR PÚBLICA -->
+  <header class="topbar">
+    <div class="topbar-esquerda">
+      <a href="/docs" class="logo-container">
+        <div class="logo-icone">W</div>
+        <span>WooHub API</span>
+      </a>
+      <span class="badge-versao">v1.2 Produção</span>
+    </div>
+
+    <div class="topbar-direita">
+      <!-- Seletor Tri-língue -->
+      <div class="seletor-idioma">
+        <button class="btn-idioma ativo" data-lang="pt" onclick="mudarIdioma('pt')">
+          <span>🇧🇷</span> PT-BR
+        </button>
+        <button class="btn-idioma" data-lang="en" onclick="mudarIdioma('en')">
+          <span>🇺🇸</span> EN
+        </button>
+        <button class="btn-idioma" data-lang="es" onclick="mudarIdioma('es')">
+          <span>🇪🇸</span> ES
+        </button>
+      </div>
+
+      <a href="/" class="btn-painel">
+        <span data-i18n="btn_acessar_painel">Acessar Painel</span> ➔
+      </a>
+    </div>
+  </header>
+
+  <!-- CONTAINER PRINCIPAL -->
+  <div class="container-docs">
+
+    <!-- SIDEBAR DE NAVEGAÇÃO -->
+    <aside class="sidebar-docs">
+      <div class="busca-box">
+        <input type="text" id="busca-docs" class="busca-input" placeholder="Filtrar endpoints..." data-i18n-placeholder="placeholder_busca" oninput="filtrarEndpoints()">
+      </div>
+
+      <div class="nav-grupo">
+        <div class="nav-titulo" data-i18n="nav_geral">Geral & Autenticação</div>
+        <a class="nav-link ativo" href="#introducao" data-i18n="nav_intro">Introdução</a>
+        <a class="nav-link" href="#autenticacao" data-i18n="nav_auth">Autenticação (Headers)</a>
+      </div>
+
+      <div class="nav-grupo">
+        <div class="nav-titulo" data-i18n="nav_pacote1">Pacote 1: Mensageria</div>
+        <a class="nav-link" href="#msg-texto"><span class="badge-metodo badge-post">POST</span> /mensagem/texto</a>
+        <a class="nav-link" href="#msg-audio"><span class="badge-metodo badge-post">POST</span> /mensagem/audio</a>
+        <a class="nav-link" href="#msg-midia"><span class="badge-metodo badge-post">POST</span> /mensagem/imagem</a>
+        <a class="nav-link" href="#msg-documento"><span class="badge-metodo badge-post">POST</span> /mensagem/documento</a>
+        <a class="nav-link" href="#msg-enquete"><span class="badge-metodo badge-post">POST</span> /mensagem/enquete</a>
+        <a class="nav-link" href="#msg-interativa"><span class="badge-metodo badge-post">POST</span> /mensagem/interativa</a>
+        <a class="nav-link" href="#msg-acoes"><span class="badge-metodo badge-post">POST</span> Reação, Edição, Delete</a>
+      </div>
+
+      <div class="nav-grupo">
+        <div class="nav-titulo" data-i18n="nav_pacote2">Pacote 2: Validação & Chat</div>
+        <a class="nav-link" href="#contato-verificar"><span class="badge-metodo badge-post">POST</span> /contato/verificar</a>
+        <a class="nav-link" href="#chat-presenca"><span class="badge-metodo badge-post">POST</span> /chat/presenca</a>
+        <a class="nav-link" href="#chat-lido"><span class="badge-metodo badge-post">POST</span> /chat/marcar-lido</a>
+      </div>
+
+      <div class="nav-grupo">
+        <div class="nav-titulo" data-i18n="nav_pacote3">Pacote 3 & 4: Grupos & Proteção</div>
+        <a class="nav-link" href="#grupo-mencao"><span class="badge-metodo badge-post">POST</span> Menção Fantasma</a>
+        <a class="nav-link" href="#status-publicar"><span class="badge-metodo badge-post">POST</span> /status/publicar</a>
+        <a class="nav-link" href="#blindagem-antiban"><span class="badge-metodo badge-post">POST</span> Proxy & Anti-Ban</a>
+      </div>
+
+      <div class="nav-grupo">
+        <div class="nav-titulo" style="color: #c084fc;">Model Context Protocol (MCP)</div>
+        <a class="nav-link" href="#mcp-protocolo"><span class="badge-metodo badge-mcp">MCP</span> IA & Agentes Autônomos</a>
+      </div>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="conteudo-docs">
+
+      <!-- INTRODUÇÃO -->
+      <section id="introducao" class="secao-header">
+        <h1 class="secao-titulo" data-i18n="titulo_intro">WooHub API • Documentação Oficial</h1>
+        <p class="secao-subtitulo" data-i18n="desc_intro">
+          A API de automação de WhatsApp de mais alto desempenho no Brasil. Construída sobre motor Go nativo, oferece mensageria corporativa, resolução automática de nono dígito brasileiro, proteção anti-ban e suporte completo a agentes de inteligência artificial via MCP.
+        </p>
+      </section>
+
+      <!-- BANNER MCP DESTAQUE -->
+      <div class="banner-mcp" id="banner-mcp-top">
+        <div class="banner-mcp-titulo">
+          <span>⚡</span>
+          <span data-i18n="banner_mcp_titulo">Pronto para Agentes de IA via Model Context Protocol (MCP)</span>
+          <span class="banner-mcp-tag">Open Standard</span>
+        </div>
+        <p style="color: #cbd5e1; font-size: 0.92rem; line-height: 1.6;" data-i18n="banner_mcp_desc">
+          Conecte o Claude Desktop, Cursor, Antigravity, ChatGPT e agentes LangChain diretamente ao WhatsApp da sua empresa com comandos em linguagem natural. Role até a seção MCP para ver a especificação completa de ferramentas e prompts.
+        </p>
+      </div>
+
+      <!-- AUTENTICAÇÃO -->
+      <section id="autenticacao" class="card-endpoint">
+        <div class="endpoint-topo">
+          <span class="badge-metodo badge-get">HEADER</span>
+          <span class="endpoint-rota" data-i18n="auth_titulo">Métodos de Autenticação</span>
+        </div>
+        <p class="endpoint-descricao" data-i18n="auth_desc">
+          Todas as requisições para a API devem incluir credenciais válidas. Para operações de WhatsApp utilize a chave da instância; para rotas administrativas utilize o Bearer Token JWT.
+        </p>
+
+        <table class="tabela-parametros">
+          <thead>
+            <tr>
+              <th data-i18n="th_header">Header</th>
+              <th data-i18n="th_tipo">Tipo</th>
+              <th data-i18n="th_escopo">Escopo</th>
+              <th data-i18n="th_desc">Descrição</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="param-nome">x-api-key</td>
+              <td class="param-tipo">String</td>
+              <td><span class="param-req">Instância</span></td>
+              <td data-i18n="auth_xapikey_desc">Chave secreta gerada ao criar a conexão WhatsApp. Usada para envio de mensagens, checagem e grupos.</td>
+            </tr>
+            <tr>
+              <td class="param-nome">Authorization</td>
+              <td class="param-tipo">Bearer Token</td>
+              <td><span class="param-req">Gestão</span></td>
+              <td data-i18n="auth_jwt_desc">Token JWT retornado em /api/v1/auth/login. Usado para criar instâncias, revendas e consultar financeiro.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ENVIAR TEXTO -->
+      <section id="msg-texto" class="card-endpoint item-endpoint">
+        <div class="endpoint-topo">
+          <span class="badge-metodo badge-post">POST</span>
+          <span class="endpoint-rota">/api/v1/mensagem/texto</span>
+          <span class="endpoint-auth">x-api-key</span>
+        </div>
+        <p class="endpoint-descricao" data-i18n="desc_msg_texto">
+          Envia uma mensagem de texto com suporte a menções (@usuario), citação/resposta de mensagens anteriores, pré-visualização de links e simulação humana com tempo de digitação.
+        </p>
+
+        <table class="tabela-parametros">
+          <thead>
+            <tr>
+              <th data-i18n="th_campo">Campo</th>
+              <th data-i18n="th_tipo">Tipo</th>
+              <th data-i18n="th_obrig">Obrigatório</th>
+              <th data-i18n="th_desc">Descrição</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="param-nome">destinatario</td>
+              <td class="param-tipo">string</td>
+              <td><span class="param-req" data-i18n="sim">Sim</span></td>
+              <td data-i18n="param_destinatario_desc">Número com DDD (ex: "11987654321") ou JID de grupo ("120363025987654@g.us").</td>
+            </tr>
+            <tr>
+              <td class="param-nome">mensagem</td>
+              <td class="param-tipo">string</td>
+              <td><span class="param-req" data-i18n="sim">Sim</span></td>
+              <td data-i18n="param_mensagem_desc">Conteúdo em texto UTF-8 com suporte a formatação (*negrito*, _itálico_, emojis).</td>
+            </tr>
+            <tr>
+              <td class="param-nome">id_mensagem_citada</td>
+              <td class="param-tipo">string</td>
+              <td><span class="param-opt" data-i18n="nao">Não</span></td>
+              <td data-i18n="param_citada_desc">ID da mensagem que será respondida com Quote/Citação.</td>
+            </tr>
+            <tr>
+              <td class="param-nome">atraso_digitacao_ms</td>
+              <td class="param-tipo">int</td>
+              <td><span class="param-opt" data-i18n="nao">Não</span></td>
+              <td data-i18n="param_digitando_desc">Milissegundos simulando presença "digitando..." antes do envio real (ex: 1500).</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="bloco-codigo-container">
+          <div class="codigo-header">
+            <div class="codigo-abas">
+              <button class="codigo-aba-btn ativo">cURL</button>
+            </div>
+            <button class="btn-copiar" onclick="copiarCodigo(this)">Copiar</button>
+          </div>
+          <pre class="codigo-snippet"><code>curl -X POST https://wooapi.wootech.com.br/api/v1/mensagem/texto \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: SUA_CHAVE_DE_INSTANCIA" \
+  -d '{
+    "destinatario": "11987654321",
+    "mensagem": "Olá! Seu pedido já está a caminho: https://loja.com/rastreio",
+    "atraso_digitacao_ms": 1200
+  }'</code></pre>
+        </div>
+      </section>
+
+      <!-- ENVIAR ÁUDIO PTT (GRAVADO NA HORA) -->
+      <section id="msg-audio" class="card-endpoint item-endpoint">
+        <div class="endpoint-topo">
+          <span class="badge-metodo badge-post">POST</span>
+          <span class="endpoint-rota">/api/v1/mensagem/audio</span>
+          <span class="endpoint-auth">x-api-key</span>
+        </div>
+        <p class="endpoint-descricao" data-i18n="desc_msg_audio">
+          Envia áudio com onda sonora e ícone de microfone verde (Push-to-Talk • PTT), exatamente como se tivesse sido gravado e falado na hora pelo usuário.
+        </p>
+
+        <div class="bloco-codigo-container">
+          <div class="codigo-header">
+            <div class="codigo-abas"><button class="codigo-aba-btn ativo">cURL</button></div>
+            <button class="btn-copiar" onclick="copiarCodigo(this)">Copiar</button>
+          </div>
+          <pre class="codigo-snippet"><code>curl -X POST https://wooapi.wootech.com.br/api/v1/mensagem/audio \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: SUA_CHAVE_DE_INSTANCIA" \
+  -d '{
+    "destinatario": "11987654321",
+    "audio_url": "https://storage.empresa.com.br/audios/atendimento.mp3",
+    "ptt": true,
+    "atraso_gravando_ms": 2500
+  }'</code></pre>
+        </div>
+      </section>
+
+      <!-- ENVIAR DOCUMENTO / PDF / BOLETO -->
+      <section id="msg-documento" class="card-endpoint item-endpoint">
+        <div class="endpoint-topo">
+          <span class="badge-metodo badge-post">POST</span>
+          <span class="endpoint-rota">/api/v1/mensagem/documento</span>
+          <span class="endpoint-auth">x-api-key</span>
+        </div>
+        <p class="endpoint-descricao" data-i18n="desc_msg_doc">
+          Envia boletos, notas fiscais, contratos e arquivos PDF/DOCX/XLSX especificando o nome oficial do arquivo que o cliente visualizará no celular.
+        </p>
+
+        <div class="bloco-codigo-container">
+          <div class="codigo-header">
+            <div class="codigo-abas"><button class="codigo-aba-btn ativo">cURL</button></div>
+            <button class="btn-copiar" onclick="copiarCodigo(this)">Copiar</button>
+          </div>
+          <pre class="codigo-snippet"><code>curl -X POST https://wooapi.wootech.com.br/api/v1/mensagem/documento \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: SUA_CHAVE_DE_INSTANCIA" \
+  -d '{
+    "destinatario": "11987654321",
+    "documento_url": "https://faturas.com.br/pdf/fatura_nov2026.pdf",
+    "nome_arquivo": "Boleto_Novembro_2026.pdf",
+    "legenda": "Segue seu boleto atualizado com vencimento para amanhã."
+  }'</code></pre>
+        </div>
+      </section>
+
+      <!-- ENQUETES INTERATIVAS -->
+      <section id="msg-enquete" class="card-endpoint item-endpoint">
+        <div class="endpoint-topo">
+          <span class="badge-metodo badge-post">POST</span>
+          <span class="endpoint-rota">/api/v1/mensagem/enquete</span>
+          <span class="endpoint-auth">x-api-key</span>
+        </div>
+        <p class="endpoint-descricao" data-i18n="desc_msg_enquete">
+          Enquetes Interativas Oficiais da Meta. Funcionam em 100% dos celulares Android, iPhones e WhatsApp Web, sem quebrar layout e garantindo alta taxa de conversão em fluxos de atendimento.
+        </p>
+
+        <div class="bloco-codigo-container">
+          <div class="codigo-header">
+            <div class="codigo-abas"><button class="codigo-aba-btn ativo">cURL</button></div>
+            <button class="btn-copiar" onclick="copiarCodigo(this)">Copiar</button>
+          </div>
+          <pre class="codigo-snippet"><code>curl -X POST https://wooapi.wootech.com.br/api/v1/mensagem/enquete \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: SUA_CHAVE_DE_INSTANCIA" \
+  -d '{
+    "destinatario": "11987654321",
+    "pergunta": "Qual assunto você deseja tratar hoje?",
+    "opcoes": [
+      "1. Falar com Suporte Técnico",
+      "2. 2ª Via de Fatura",
+      "3. Novos Planos & Assinatura"
+    ],
+    "maximo_selecao": 1
+  }'</code></pre>
+        </div>
+      </section>
+
+      <!-- BOTÕES NATIVE FLOW -->
+      <section id="msg-interativa" class="card-endpoint item-endpoint">
+        <div class="endpoint-topo">
+          <span class="badge-metodo badge-post">POST</span>
+          <span class="endpoint-rota">/api/v1/mensagem/interativa</span>
+          <span class="endpoint-auth">x-api-key</span>
+        </div>
+        <p class="endpoint-descricao" data-i18n="desc_msg_botoes">
+          Botões interativos Native Flow (Link/CTA URL, Pix Copia e Cola instantâneo, Resposta Rápida e Botão de Chamada VoIP).
+        </p>
+
+        <div class="bloco-codigo-container">
+          <div class="codigo-header">
+            <div class="codigo-abas"><button class="codigo-aba-btn ativo">cURL</button></div>
+            <button class="btn-copiar" onclick="copiarCodigo(this)">Copiar</button>
+          </div>
+          <pre class="codigo-snippet"><code>curl -X POST https://wooapi.wootech.com.br/api/v1/mensagem/interativa \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: SUA_CHAVE_DE_INSTANCIA" \
+  -d '{
+    "destinatario": "11987654321",
+    "titulo": "Pagamento Disponível",
+    "corpo": "Clique abaixo para copiar sua chave Pix e pagar em 1 clique:",
+    "rodape": "WooHub Pay 100% Brasil",
+    "botoes": [
+      { "tipo": "cta_copy", "rotulo": "Copiar Código Pix", "conteudo": "00020126580014br.gov.bcb.pix..." },
+      { "tipo": "cta_url", "rotulo": "Abrir Rastreio", "conteudo": "https://meupedido.com/123" }
+    ]
+  }'</code></pre>
+        </div>
+      </section>
+
+      <!-- REAÇÃO, EDIÇÃO E DELETE -->
+      <section id="msg-acoes" class="card-endpoint item-endpoint">
+        <div class="endpoint-topo">
+          <span class="badge-metodo badge-post">POST</span>
+          <span class="endpoint-rota">Ações em Mensagens (Reação, Edição e Revogação)</span>
+          <span class="endpoint-auth">x-api-key</span>
+        </div>
+        <p class="endpoint-descricao" data-i18n="desc_msg_acoes">
+          Permite reagir com qualquer emoji, editar textos em tempo real após o envio e revogar (apagar para todos) mensagens disparadas.
+        </p>
+
+        <div class="bloco-codigo-container">
+          <div class="codigo-header">
+            <div class="codigo-abas"><button class="codigo-aba-btn ativo">JSON Endpoints</button></div>
+            <button class="btn-copiar" onclick="copiarCodigo(this)">Copiar</button>
+          </div>
+          <pre class="codigo-snippet"><code># 1. Reagir com Emoji
+POST /api/v1/mensagem/reacao
+{ "destinatario": "11987654321", "id_mensagem_alvo": "3EB0ABCDEF123", "emoji": "❤️" }
+
+# 2. Editar Texto (até 15 minutos após o envio)
+POST /api/v1/mensagem/editar
+{ "destinatario": "11987654321", "id_mensagem_alvo": "3EB0ABCDEF123", "novo_texto": "Texto retificado!" }
+
+# 3. Apagar / Revogar para Todos
+POST /api/v1/mensagem/revogar
+{ "destinatario": "11987654321", "id_mensagem_alvo": "3EB0ABCDEF123" }</code></pre>
+        </div>
+      </section>
+
+      <!-- VALIDADOR 9º DÍGITO BRASIL -->
+      <section id="contato-verificar" class="card-endpoint item-endpoint">
+        <div class="endpoint-topo">
+          <span class="badge-metodo badge-post">POST</span>
+          <span class="endpoint-rota">/api/v1/contato/verificar</span>
+          <span class="endpoint-auth">x-api-key</span>
+        </div>
+        <p class="endpoint-descricao" data-i18n="desc_validador">
+          Higienização em lote de listas com resolução automática do nono dígito brasileiro. Testa se o número existe com ou sem o 9 (ex: 55119... vs 5511...) e retorna o JID exato registrado no servidor do WhatsApp.
+        </p>
+
+        <div class="bloco-codigo-container">
+          <div class="codigo-header">
+            <div class="codigo-abas"><button class="codigo-aba-btn ativo">cURL</button></div>
+            <button class="btn-copiar" onclick="copiarCodigo(this)">Copiar</button>
+          </div>
+          <pre class="codigo-snippet"><code>curl -X POST https://wooapi.wootech.com.br/api/v1/contato/verificar \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: SUA_CHAVE_DE_INSTANCIA" \
+  -d '{
+    "numeros": ["(11) 98765-4321", "62988887777", "551999998888"]
+  }'</code></pre>
+        </div>
+      </section>
+
+      <!-- PRESENÇA DE CHAT -->
+      <section id="chat-presenca" class="card-endpoint item-endpoint">
+        <div class="endpoint-topo">
+          <span class="badge-metodo badge-post">POST</span>
+          <span class="endpoint-rota">/api/v1/chat/presenca</span>
+          <span class="endpoint-auth">x-api-key</span>
+        </div>
+        <p class="endpoint-descricao" data-i18n="desc_presenca">
+          Simula presença de digitação ou gravação de áudio em tempo real na conversa do contato, essencial para bots humanizados e anti-ban.
+        </p>
+
+        <div class="bloco-codigo-container">
+          <div class="codigo-header">
+            <div class="codigo-abas"><button class="codigo-aba-btn ativo">cURL</button></div>
+            <button class="btn-copiar" onclick="copiarCodigo(this)">Copiar</button>
+          </div>
+          <pre class="codigo-snippet"><code>curl -X POST https://wooapi.wootech.com.br/api/v1/chat/presenca \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: SUA_CHAVE_DE_INSTANCIA" \
+  -d '{
+    "destinatario": "11987654321",
+    "estado": "digitando"
+  }'
+# Estados aceitos: digitando | gravando_audio | pausado | online</code></pre>
+        </div>
+      </section>
+
+      <!-- MARCAR COMO LIDO (CHECKS AZUIS) -->
+      <section id="chat-lido" class="card-endpoint item-endpoint">
+        <div class="endpoint-topo">
+          <span class="badge-metodo badge-post">POST</span>
+          <span class="endpoint-rota">/api/v1/chat/marcar-lido</span>
+          <span class="endpoint-auth">x-api-key</span>
+        </div>
+        <p class="endpoint-descricao" data-i18n="desc_lido">
+          Envia a confirmação de leitura oficial (2 checks azuis) para mensagens recebidas de um contato ou grupo.
+        </p>
+
+        <div class="bloco-codigo-container">
+          <div class="codigo-header">
+            <div class="codigo-abas"><button class="codigo-aba-btn ativo">cURL</button></div>
+            <button class="btn-copiar" onclick="copiarCodigo(this)">Copiar</button>
+          </div>
+          <pre class="codigo-snippet"><code>curl -X POST https://wooapi.wootech.com.br/api/v1/chat/marcar-lido \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: SUA_CHAVE_DE_INSTANCIA" \
+  -d '{
+    "destinatario": "11987654321",
+    "ids_mensagens": ["3EB012345678"]
+  }'</code></pre>
+        </div>
+      </section>
+
+      <!-- MENÇÃO FANTASMA EM GRUPOS -->
+      <section id="grupo-mencao" class="card-endpoint item-endpoint">
+        <div class="endpoint-topo">
+          <span class="badge-metodo badge-post">POST</span>
+          <span class="endpoint-rota">/api/v1/grupo/mencao-fantasma</span>
+          <span class="endpoint-auth">x-api-key</span>
+        </div>
+        <p class="endpoint-descricao" data-i18n="desc_mencao_fantasma">
+          Notifica 100% dos membros de um grupo (@todos) nos servidores do WhatsApp sem poluir visualmente o corpo do texto com dezenas de números marcados.
+        </p>
+
+        <div class="bloco-codigo-container">
+          <div class="codigo-header">
+            <div class="codigo-abas"><button class="codigo-aba-btn ativo">cURL</button></div>
+            <button class="btn-copiar" onclick="copiarCodigo(this)">Copiar</button>
+          </div>
+          <pre class="codigo-snippet"><code>curl -X POST https://wooapi.wootech.com.br/api/v1/grupo/mencao-fantasma \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: SUA_CHAVE_DE_INSTANCIA" \
+  -d '{
+    "grupo_jid": "120363025987654@g.us",
+    "mensagem": "🚨 ATENÇÃO: Começou o plantão de dúvidas ao vivo!"
+  }'</code></pre>
+        </div>
+      </section>
+
+      <!-- STATUS / STORIES 24H -->
+      <section id="status-publicar" class="card-endpoint item-endpoint">
+        <div class="endpoint-topo">
+          <span class="badge-metodo badge-post">POST</span>
+          <span class="endpoint-rota">/api/v1/status/publicar</span>
+          <span class="endpoint-auth">x-api-key</span>
+        </div>
+        <p class="endpoint-descricao" data-i18n="desc_status">
+          Publica postagens no feed de Status (Stories de 24 horas) do número conectado. Aceita textos coloridos, fotos ou vídeos promocionais.
+        </p>
+
+        <div class="bloco-codigo-container">
+          <div class="codigo-header">
+            <div class="codigo-abas"><button class="codigo-aba-btn ativo">cURL</button></div>
+            <button class="btn-copiar" onclick="copiarCodigo(this)">Copiar</button>
+          </div>
+          <pre class="codigo-snippet"><code>curl -X POST https://wooapi.wootech.com.br/api/v1/status/publicar \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: SUA_CHAVE_DE_INSTANCIA" \
+  -d '{
+    "tipo": "texto",
+    "texto": "Super Promoção de Black Friday! 🔥 Acesse nosso site.",
+    "cor_fundo": "#059669"
+  }'</code></pre>
+        </div>
+      </section>
+
+      <!-- BLINDAGEM ANTI-BAN & PROXY -->
+      <section id="blindagem-antiban" class="card-endpoint item-endpoint">
+        <div class="endpoint-topo">
+          <span class="badge-metodo badge-post">POST</span>
+          <span class="endpoint-rota">/api/v1/instancia/{id}/configuracoes</span>
+          <span class="endpoint-auth">Bearer Token</span>
+        </div>
+        <p class="endpoint-descricao" data-i18n="desc_blindagem">
+          Blindagem e proteção da linha telefônica: IP dedicado via Proxy Residencial SOCKS5/HTTP, rejeição automática de ligações de voz/vídeo com resposta configurável e modo sempre online.
+        </p>
+
+        <div class="bloco-codigo-container">
+          <div class="codigo-header">
+            <div class="codigo-abas"><button class="codigo-aba-btn ativo">cURL</button></div>
+            <button class="btn-copiar" onclick="copiarCodigo(this)">Copiar</button>
+          </div>
+          <pre class="codigo-snippet"><code>curl -X POST https://wooapi.wootech.com.br/api/v1/instancia/inst_abc123/configuracoes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer SEU_TOKEN_JWT" \
+  -d '{
+    "proxy_url": "socks5://usuario:senha@proxy-brasil.provedor.com:1080",
+    "rejeitar_chamadas": true,
+    "mensagem_chamada_rejeitada": "Olá! Não atendemos ligações por este canal. Por favor, envie uma mensagem de texto.",
+    "ignorar_grupos": false,
+    "leitura_automatica": true,
+    "sempre_online": true
+  }'</code></pre>
+        </div>
+      </section>
+
+      <!-- MODEL CONTEXT PROTOCOL (MCP) -->
+      <section id="mcp-protocolo" class="card-endpoint" style="border-color: rgba(139, 92, 246, 0.45); background: #111a30;">
+        <div class="endpoint-topo">
+          <span class="badge-metodo badge-mcp">MCP SPEC</span>
+          <span class="endpoint-rota" style="color: #c084fc;">Model Context Protocol (MCP) • Guia de Conexão com IA</span>
+        </div>
+        <p class="endpoint-descricao" data-i18n="desc_mcp_guia">
+          O Model Context Protocol (MCP) é o padrão aberto que conecta assistentes de inteligência artificial (como Claude, Cursor, Antigravity, VS Code e agentes autônomos) a sistemas externos. Através do MCP da WooHub API, IAs podem executar ações de WhatsApp nativamente sob linguagem natural.
+        </p>
+
+        <h3 style="font-size: 1.05rem; color: #e9d5ff; margin: 1.25rem 0 0.5rem 0;" data-i18n="mcp_tools_titulo">Ferramentas (Tools) Expostas para a IA:</h3>
+        
+        <table class="tabela-parametros">
+          <thead>
+            <tr>
+              <th>Ferramenta (Tool)</th>
+              <th data-i18n="th_parametros">Parâmetros Principais</th>
+              <th data-i18n="th_acao">Ação Realizada pelo Agente de IA</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="param-nome" style="color:#c084fc;">whatsapp_send_text</td>
+              <td class="param-tipo">destinatario, mensagem, atraso_ms</td>
+              <td data-i18n="tool_send_text_desc">Envia texto simples ou com formatação e delay humano.</td>
+            </tr>
+            <tr>
+              <td class="param-nome" style="color:#c084fc;">whatsapp_send_media</td>
+              <td class="param-tipo">destinatario, tipo, url, legenda</td>
+              <td data-i18n="tool_send_media_desc">Envia áudios gravados na hora (PTT), imagens, vídeos ou faturas PDF.</td>
+            </tr>
+            <tr>
+              <td class="param-nome" style="color:#c084fc;">whatsapp_send_poll</td>
+              <td class="param-tipo">destinatario, pergunta, opcoes</td>
+              <td data-i18n="tool_send_poll_desc">Cria enquetes de decisão e pesquisa para os clientes responderem.</td>
+            </tr>
+            <tr>
+              <td class="param-nome" style="color:#c084fc;">whatsapp_verify_number</td>
+              <td class="param-tipo">numeros (array)</td>
+              <td data-i18n="tool_verify_desc">Higieniza telefones e corrige automaticamente o 9º dígito brasileiro.</td>
+            </tr>
+            <tr>
+              <td class="param-nome" style="color:#c084fc;">whatsapp_get_status</td>
+              <td class="param-tipo">instancia_id</td>
+              <td data-i18n="tool_status_desc">Verifica se o WhatsApp está conectado, nível de bateria e versão.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 style="font-size: 1.05rem; color: #e9d5ff; margin: 1.5rem 0 0.5rem 0;" data-i18n="mcp_config_titulo">Configuração no Claude Desktop / Cursor / Antigravity:</h3>
+        <p style="color: var(--texto-muted); font-size: 0.88rem; margin-bottom: 0.75rem;" data-i18n="mcp_config_desc">
+          Adicione o bloco abaixo ao arquivo <code>claude_desktop_config.json</code> ou na configuração de MCP Servers da sua IDE:
+        </p>
+
+        <div class="bloco-codigo-container">
+          <div class="codigo-header">
+            <div class="codigo-abas"><button class="codigo-aba-btn ativo">JSON (mcpServers)</button></div>
+            <button class="btn-copiar" onclick="copiarCodigo(this)">Copiar</button>
+          </div>
+          <pre class="codigo-snippet"><code>{
+  "mcpServers": {
+    "woohub-whatsapp": {
+      "command": "npx",
+      "args": ["-y", "@woohub/mcp-server"],
+      "env": {
+        "WOOHUB_API_URL": "https://wooapi.wootech.com.br",
+        "WOOHUB_API_KEY": "SUA_CHAVE_DE_INSTANCIA_AQUI"
+      }
+    }
+  }
+}</code></pre>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- SCRIPT DE TRADUÇÃO TRI-LÍNGUE & COMPORTAMENTO INTERATIVO -->
+  <script>
+    const DICIONARIO = {
+      pt: {
+        btn_acessar_painel: "Acessar Painel",
+        placeholder_busca: "Filtrar endpoints...",
+        nav_geral: "Geral & Autenticação",
+        nav_intro: "Introdução",
+        nav_auth: "Autenticação (Headers)",
+        nav_pacote1: "Pacote 1: Mensageria",
+        nav_pacote2: "Pacote 2: Validação & Chat",
+        nav_pacote3: "Pacote 3 & 4: Grupos & Proteção",
+        titulo_intro: "WooHub API • Documentação Oficial",
+        desc_intro: "A API de automação de WhatsApp de mais alto desempenho no Brasil. Construída sobre motor Go nativo, oferece mensageria corporativa, resolução automática de nono dígito brasileiro, proteção anti-ban e suporte completo a agentes de inteligência artificial via MCP.",
+        banner_mcp_titulo: "Pronto para Agentes de IA via Model Context Protocol (MCP)",
+        banner_mcp_desc: "Conecte o Claude Desktop, Cursor, Antigravity, ChatGPT e agentes LangChain diretamente ao WhatsApp da sua empresa com comandos em linguagem natural. Role até a seção MCP para ver a especificação completa de ferramentas e prompts.",
+        auth_titulo: "Métodos de Autenticação",
+        auth_desc: "Todas as requisições para a API devem incluir credenciais válidas. Para operações de WhatsApp utilize a chave da instância; para rotas administrativas utilize o Bearer Token JWT.",
+        th_header: "Header",
+        th_tipo: "Tipo",
+        th_escopo: "Escopo",
+        th_desc: "Descrição",
+        th_campo: "Campo",
+        th_obrig: "Obrigatório",
+        th_parametros: "Parâmetros Principais",
+        th_acao: "Ação Realizada pelo Agente de IA",
+        auth_xapikey_desc: "Chave secreta gerada ao criar a conexão WhatsApp. Usada para envio de mensagens, checagem e grupos.",
+        auth_jwt_desc: "Token JWT retornado em /api/v1/auth/login. Usado para criar instâncias, revendas e consultar financeiro.",
+        sim: "Sim",
+        nao: "Não",
+        desc_msg_texto: "Envia uma mensagem de texto com suporte a menções (@usuario), citação/resposta de mensagens anteriores, pré-visualização de links e simulação humana com tempo de digitação.",
+        param_destinatario_desc: "Número com DDD (ex: '11987654321') ou JID de grupo ('120363025987654@g.us').",
+        param_mensagem_desc: "Conteúdo em texto UTF-8 com suporte a formatação (*negrito*, _itálico_, emojis).",
+        param_citada_desc: "ID da mensagem que será respondida com Quote/Citação.",
+        param_digitando_desc: "Milissegundos simulando presença 'digitando...' antes do envio real (ex: 1200).",
+        desc_msg_audio: "Envia áudio com onda sonora e ícone de microfone verde (Push-to-Talk • PTT), exatamente como se tivesse sido gravado e falado na hora pelo usuário.",
+        desc_msg_doc: "Envia boletos, notas fiscais, contratos e arquivos PDF/DOCX/XLSX especificando o nome oficial do arquivo que o cliente visualizará no celular.",
+        desc_msg_enquete: "Enquetes Interativas Oficiais da Meta. Funcionam em 100% dos celulares Android, iPhones e WhatsApp Web, sem quebrar layout e garantindo alta taxa de conversão em fluxos de atendimento.",
+        desc_msg_botoes: "Botões interativos Native Flow (Link/CTA URL, Pix Copia e Cola instantâneo, Resposta Rápida e Botão de Chamada VoIP).",
+        desc_msg_acoes: "Permite reagir com qualquer emoji, editar textos em tempo real após o envio e revogar (apagar para todos) mensagens disparadas.",
+        desc_validador: "Higienização em lote de listas com resolução automática do nono dígito brasileiro. Testa se o número existe com ou sem o 9 (ex: 55119... vs 5511...) e retorna o JID exato registrado no servidor do WhatsApp.",
+        desc_presenca: "Simula presença de digitação ou gravação de áudio em tempo real na conversa do contato, essencial para bots humanizados e anti-ban.",
+        desc_lido: "Envia a confirmação de leitura oficial (2 checks azuis) para mensagens recebidas de um contato ou grupo.",
+        desc_mencao_fantasma: "Notifica 100% dos membros de um grupo (@todos) nos servidores do WhatsApp sem poluir visualmente o corpo do texto com dezenas de números marcados.",
+        desc_status: "Publica postagens no feed de Status (Stories de 24 horas) do número conectado. Aceita textos coloridos, fotos ou vídeos promocionais.",
+        desc_blindagem: "Blindagem e proteção da linha telefônica: IP dedicado via Proxy Residencial SOCKS5/HTTP, rejeição automática de ligações de voz/vídeo com resposta configurável e modo sempre online.",
+        desc_mcp_guia: "O Model Context Protocol (MCP) é o padrão aberto que conecta assistentes de inteligência artificial (como Claude, Cursor, Antigravity, VS Code e agentes autônomos) a sistemas externos. Através do MCP da WooHub API, IAs podem executar ações de WhatsApp nativamente sob linguagem natural.",
+        mcp_tools_titulo: "Ferramentas (Tools) Expostas para a IA:",
+        tool_send_text_desc: "Envia texto simples ou com formatação e delay humano.",
+        tool_send_media_desc: "Envia áudios gravados na hora (PTT), imagens, vídeos ou faturas PDF.",
+        tool_send_poll_desc: "Cria enquetes de decisão e pesquisa para os clientes responderem.",
+        tool_verify_desc: "Higieniza telefones e corrige automaticamente o 9º dígito brasileiro.",
+        tool_status_desc: "Verifica se o WhatsApp está conectado, nível de bateria e versão.",
+        mcp_config_titulo: "Configuração no Claude Desktop / Cursor / Antigravity:",
+        mcp_config_desc: "Adicione o bloco abaixo ao arquivo claude_desktop_config.json ou na configuração de MCP Servers da sua IDE:"
+      },
+      en: {
+        btn_acessar_painel: "Open Dashboard",
+        placeholder_busca: "Filter endpoints...",
+        nav_geral: "General & Authentication",
+        nav_intro: "Introduction",
+        nav_auth: "Authentication (Headers)",
+        nav_pacote1: "Package 1: Messaging",
+        nav_pacote2: "Package 2: Validation & Chat",
+        nav_pacote3: "Package 3 & 4: Groups & Protection",
+        titulo_intro: "WooHub API • Official Documentation",
+        desc_intro: "The highest-performance WhatsApp automation API. Built on a native Go engine, it delivers enterprise messaging, automatic Brazilian 9th digit resolution, anti-ban shielding, and full Model Context Protocol (MCP) support for AI agents.",
+        banner_mcp_titulo: "Ready for AI Agents via Model Context Protocol (MCP)",
+        banner_mcp_desc: "Connect Claude Desktop, Cursor, Antigravity, ChatGPT, and LangChain agents directly to your company's WhatsApp using natural language commands. Scroll down to the MCP section for the full tools specification.",
+        auth_titulo: "Authentication Methods",
+        auth_desc: "All API requests require valid credentials. Use the Instance API Key for WhatsApp operations; use the Bearer JWT Token for administrative management.",
+        th_header: "Header",
+        th_tipo: "Type",
+        th_escopo: "Scope",
+        th_desc: "Description",
+        th_campo: "Field",
+        th_obrig: "Required",
+        th_parametros: "Key Parameters",
+        th_acao: "Action Performed by AI Agent",
+        auth_xapikey_desc: "Secret key generated when creating the WhatsApp connection. Used for sending messages, checking status, and managing groups.",
+        auth_jwt_desc: "JWT Token returned by /api/v1/auth/login. Used to create instances, manage resellers, and inspect billing.",
+        sim: "Yes",
+        nao: "No",
+        desc_msg_texto: "Sends a text message with support for mentions (@user), reply quotes, link previews, and human typing delay simulation.",
+        param_destinatario_desc: "Recipient phone number with country code (e.g. '5511987654321') or group JID ('120363025987654@g.us').",
+        param_mensagem_desc: "UTF-8 text content with formatting support (*bold*, _italic_, emojis).",
+        param_citada_desc: "Target message ID to be quoted/replied to.",
+        param_digitando_desc: "Milliseconds to simulate 'typing...' presence before real delivery (e.g. 1200).",
+        desc_msg_audio: "Sends audio waveform message with green microphone icon (Push-to-Talk • PTT), exactly as recorded live on device.",
+        desc_msg_doc: "Sends invoices, contracts, and PDF/DOCX/XLSX files with a custom human-readable filename shown on the phone.",
+        desc_msg_enquete: "Official Meta Interactive Polls. Works across 100% of Android devices, iPhones, and WhatsApp Web without broken layouts.",
+        desc_msg_botoes: "Interactive Native Flow buttons (Link/CTA URL, instant Pix Copy-Paste, Quick Reply, and VoIP call buttons).",
+        desc_msg_acoes: "Allows emoji reactions, real-time message editing within 15 minutes, and message revoke (delete for everyone).",
+        desc_validador: "Batch contact list sanitization with automatic Brazilian 9th digit resolution. Verifies active account and returns exact registered JID.",
+        desc_presenca: "Simulates typing or voice recording presence in real-time, crucial for humanized bots and anti-ban behavior.",
+        desc_lido: "Sends official read receipt (2 blue checkmarks) for messages received from a contact or group.",
+        desc_mencao_fantasma: "Notifies 100% of group members (@everyone) on WhatsApp servers without cluttering the text with phone tags.",
+        desc_status: "Posts updates to the 24-hour Status feed (Stories). Supports colored text cards, pictures, or promo videos.",
+        desc_blindagem: "Phone line protection: dedicated residential SOCKS5/HTTP proxy, auto call rejection with custom reply, and keep-alive presence.",
+        desc_mcp_guia: "The Model Context Protocol (MCP) is the open standard connecting AI assistants (Claude, Cursor, Antigravity, VS Code, and autonomous agents) to external tools. With WooHub API MCP, AIs can trigger WhatsApp operations natively.",
+        mcp_tools_titulo: "Tools Exposed to AI Agents:",
+        tool_send_text_desc: "Sends plain or formatted text with natural human delay.",
+        tool_send_media_desc: "Sends live PTT voice notes, images, videos, or PDF invoices.",
+        tool_send_poll_desc: "Creates interactive decision and feedback polls.",
+        tool_verify_desc: "Sanitizes phone lists and resolves Brazilian 9th digits.",
+        tool_status_desc: "Checks WhatsApp connection status, battery level, and engine version.",
+        mcp_config_titulo: "Configuration in Claude Desktop / Cursor / Antigravity:",
+        mcp_config_desc: "Add the snippet below to your claude_desktop_config.json or your IDE's MCP Server settings:"
+      },
+      es: {
+        btn_acessar_painel: "Entrar al Panel",
+        placeholder_busca: "Filtrar endpoints...",
+        nav_geral: "General y Autenticación",
+        nav_intro: "Introducción",
+        nav_auth: "Autenticación (Headers)",
+        nav_pacote1: "Paquete 1: Mensajería",
+        nav_pacote2: "Paquete 2: Validación y Chat",
+        nav_pacote3: "Paquete 3 y 4: Grupos y Protección",
+        titulo_intro: "WooHub API • Documentación Oficial",
+        desc_intro: "La API de automatización de WhatsApp de mayor rendimiento en Brasil. Desarrollada sobre un motor nativo en Go, ofrece mensajería corporativa, resolución automática de noveno dígito brasileño, protección anti-ban y compatibilidad total con agentes de IA vía MCP.",
+        banner_mcp_titulo: "Listo para Agentes de IA vía Model Context Protocol (MCP)",
+        banner_mcp_desc: "Conecte Claude Desktop, Cursor, Antigravity, ChatGPT y agentes LangChain directamente al WhatsApp de su empresa con instrucciones en lenguaje natural. Desplácese a la sección MCP para consultar la especificación completa.",
+        auth_titulo: "Métodos de Autenticación",
+        auth_desc: "Todas las solicitudes a la API requieren credenciales válidas. Utilice la clave de instancia para operaciones de WhatsApp; utilice el Bearer JWT Token para gestión administrativa.",
+        th_header: "Encabezado",
+        th_tipo: "Tipo",
+        th_escopo: "Alcance",
+        th_desc: "Descripción",
+        th_campo: "Campo",
+        th_obrig: "Obligatorio",
+        th_parametros: "Parámetros Clave",
+        th_acao: "Acción Ejecutada por el Agente de IA",
+        auth_xapikey_desc: "Clave secreta generada al crear la conexión WhatsApp. Utilizada para envío de mensajes, consultas y grupos.",
+        auth_jwt_desc: "Token JWT retornado por /api/v1/auth/login. Utilizado para crear instancias, gestionar revendedores y facturación.",
+        sim: "Sí",
+        nao: "No",
+        desc_msg_texto: "Envía mensajes de texto con soporte para menciones (@usuario), citas/respuestas, vista previa de enlaces y simulación de escritura humana.",
+        param_destinatario_desc: "Número con código de país/área (ej: '5511987654321') o JID de grupo ('120363025987654@g.us').",
+        param_mensagem_desc: "Contenido de texto UTF-8 con formato (*negrita*, _cursiva_, emojis).",
+        param_citada_desc: "ID del mensaje destino para responder con cita.",
+        param_digitando_desc: "Milisegundos para simular presencia 'escribiendo...' antes del envío real (ej: 1200).",
+        desc_msg_audio: "Envía mensajes de audio con onda y micrófono verde (Push-to-Talk • PTT), grabado en vivo.",
+        desc_msg_doc: "Envía facturas, contratos y archivos PDF/DOCX/XLSX con nombre personalizado visible en el teléfono.",
+        desc_msg_enquete: "Encuestas Interactivas Oficiales de Meta. Funcionan en el 100% de Android, iPhones y WhatsApp Web sin desconfigurar el diseño.",
+        desc_msg_botoes: "Botones interactivos Native Flow (Enlace/URL, Copiar clave Pix al instante, Respuesta Rápida y Llamada VoIP).",
+        desc_msg_acoes: "Permite reaccionar con emojis, editar mensajes hasta 15 minutos después del envío y revocar (eliminar para todos).",
+        desc_validador: "Higienización por lote con resolución del 9º dígito brasileño. Comprueba si existe la cuenta y retorna el JID exacto.",
+        desc_presenca: "Simula presencia escribiendo o grabando audio en tiempo real, fundamental para bots humanizados y anti-ban.",
+        desc_lido: "Envía confirmación de lectura oficial (2 tildes azules) para mensajes recibidos.",
+        desc_mencao_fantasma: "Notifica al 100% de los miembros del grupo (@todos) sin saturar visualmente el texto con números.",
+        desc_status: "Publica estados de 24 horas (Stories). Admite tarjetas de texto de colores, fotos o vídeos promocionales.",
+        desc_blindagem: "Blindaje de línea: proxy residencial dedicado SOCKS5/HTTP, rechazo automático de llamadas y presencia siempre activa.",
+        desc_mcp_guia: "El Model Context Protocol (MCP) es el estándar abierto que conecta asistentes de IA (Claude, Cursor, Antigravity, VS Code y agentes autónomos) con herramientas externas. Con WooHub API MCP, las IAs operan WhatsApp de forma nativa.",
+        mcp_tools_titulo: "Herramientas (Tools) Expuestas para la IA:",
+        tool_send_text_desc: "Envía texto plano o con formato y retardo humano.",
+        tool_send_media_desc: "Envía notas de voz PTT en vivo, fotos, vídeos o facturas PDF.",
+        tool_send_poll_desc: "Crea encuestas interactivas de decisión y satisfacción.",
+        tool_verify_desc: "Higieniza listas de números y resuelve el 9º dígito brasileño.",
+        tool_status_desc: "Verifica el estado de conexión de WhatsApp, batería y versión.",
+        mcp_config_titulo: "Configuración en Claude Desktop / Cursor / Antigravity:",
+        mcp_config_desc: "Agregue el siguiente bloque a claude_desktop_config.json o en la configuración de MCP de su IDE:"
+      }
+    };
+
+    let idiomaAtual = 'pt';
+
+    function mudarIdioma(lang) {
+      if (!DICIONARIO[lang]) return;
+      idiomaAtual = lang;
+      localStorage.setItem('woohub_docs_lang', lang);
+
+      // Atualiza botões
+      document.querySelectorAll('.btn-idioma').forEach(b => {
+        b.classList.toggle('ativo', b.getAttribute('data-lang') === lang);
+      });
+
+      // Aplica textos
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const chave = el.getAttribute('data-i18n');
+        if (DICIONARIO[lang][chave]) {
+          el.innerText = DICIONARIO[lang][chave];
+        }
+      });
+
+      // Aplica placeholders
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const chave = el.getAttribute('data-i18n-placeholder');
+        if (DICIONARIO[lang][chave]) {
+          el.placeholder = DICIONARIO[lang][chave];
+        }
+      });
+    }
+
+    function copiarCodigo(btn) {
+      const pre = btn.closest('.bloco-codigo-container').querySelector('pre code');
+      if (!pre) return;
+      navigator.clipboard.writeText(pre.innerText).then(() => {
+        const textoOriginal = btn.innerText;
+        btn.innerText = 'Copiado! ✓';
+        btn.style.color = '#10b981';
+        btn.style.borderColor = '#10b981';
+        setTimeout(() => {
+          btn.innerText = textoOriginal;
+          btn.style.color = '';
+          btn.style.borderColor = '';
+        }, 2000);
+      });
+    }
+
+    function filtrarEndpoints() {
+      const termo = document.getElementById('busca-docs').value.toLowerCase().trim();
+      document.querySelectorAll('.item-endpoint').forEach(item => {
+        const texto = item.innerText.toLowerCase();
+        item.style.display = texto.includes(termo) ? 'block' : 'none';
+      });
+    }
+
+    // Inicialização ao carregar a página
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Detecta idioma por query string (?lang=en) ou localStorage ou navegador
+      const params = new URLSearchParams(window.location.search);
+      const urlLang = params.get('lang');
+      const savedLang = localStorage.getItem('woohub_docs_lang');
+      const browserLang = (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : ((navigator.language || '').toLowerCase().startsWith('en') ? 'en' : 'pt');
+
+      const langFinal = urlLang || savedLang || browserLang || 'pt';
+      mudarIdioma(langFinal);
+
+      // 2. Highlighting de links ativos na sidebar ao rolar a página
+      const links = document.querySelectorAll('.sidebar-docs .nav-link');
+      window.addEventListener('scroll', () => {
+        let scrollPos = window.scrollY + 120;
+        document.querySelectorAll('section[id]').forEach(section => {
+          if (scrollPos >= section.offsetTop && scrollPos < (section.offsetTop + section.offsetHeight)) {
+            links.forEach(l => {
+              l.classList.toggle('ativo', l.getAttribute('href') === `#${section.id}`);
+            });
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

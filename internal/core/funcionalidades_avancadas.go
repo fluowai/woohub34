@@ -1018,6 +1018,22 @@ func (g *GerenciadorInstancias) tratarEventoMensagemCompleta(v *events.Message, 
 		_ = inst.Cliente.MarkRead(ctx, []types.MessageID{v.Info.ID}, time.Now(), v.Info.Chat, sender)
 	}
 
+	// 0. Verificar se é Revogação de Mensagem (ProtocolMessage_REVOKE - Ghost Mode)
+	if protoMsg := v.Message.GetProtocolMessage(); protoMsg != nil {
+		if protoMsg.GetType() == waProto.ProtocolMessage_REVOKE {
+			targetID := protoMsg.GetKey().GetID()
+			_ = g.db.MarcarMensagemDeletada(inst.ID, targetID)
+			HubChatGlobal.Transmitir(EventoChatWeb{
+				Tipo:        "mensagem_deletada",
+				InstanciaID: inst.ID,
+				Dados: map[string]interface{}{
+					"id_mensagem": targetID,
+					"chat_jid":    v.Info.Chat.String(),
+				},
+			})
+		}
+	}
+
 	// 1. Verificar se é Voto de Enquete (PollUpdateMessage)
 	if v.Message.GetPollUpdateMessage() != nil && inst.Cliente != nil {
 		voto, errPoll := inst.Cliente.DecryptPollVote(ctx, v)
@@ -1226,6 +1242,35 @@ func (g *GerenciadorInstancias) tratarEventoMensagemCompleta(v *events.Message, 
 		"midia_base64":  midiaBase64,
 		"arquivo_local": caminhoSalvo,
 	}
+	// Persistência no Web Chat (WhatsApp Web Clone) e Transmissão Realtime
+	statusInicial := "RECEBIDA"
+	if v.Info.IsFromMe {
+		statusInicial = "ENVIADA"
+	}
+	urlParaSalvar := urlMidiaRemota
+	if urlParaSalvar == "" && caminhoSalvo != "" {
+		urlParaSalvar = "/api/v1/midia/local?path=" + filepath.Base(caminhoSalvo)
+	}
+	msgChatWeb := database.MensagemChat{
+		ID:           v.Info.ID,
+		InstanciaID:  inst.ID,
+		ChatJID:      v.Info.Chat.String(),
+		RemetenteJID: v.Info.Sender.String(),
+		DeMim:        v.Info.IsFromMe,
+		Tipo:         tipoMensagem,
+		Texto:        texto,
+		MidiaURL:     urlParaSalvar,
+		MimeType:     mimeType,
+		NomeArquivo:  nomeArquivo,
+		Status:       statusInicial,
+		CriadoEm:     v.Info.Timestamp,
+	}
+	_ = g.db.SalvarMensagemChat(msgChatWeb)
+	HubChatGlobal.Transmitir(EventoChatWeb{
+		Tipo:        "nova_mensagem",
+		InstanciaID: inst.ID,
+		Mensagem:    &msgChatWeb,
+	})
 
 		if resp := v.Message.GetInteractiveResponseMessage(); resp != nil {
 		dadosResp := map[string]interface{}{}

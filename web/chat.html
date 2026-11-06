@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Web - WooAPI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="chat.css?v=20261105v1">
+  <link rel="icon" type="image/svg+xml" id="fav-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%2325D366'/%3E%3Cpath d='M50 20c-16.5 0-30 13.5-30 30 0 5.3 1.4 10.3 3.8 14.6L20 80l15.8-3.7c4.2 2.3 9 3.7 14.2 3.7 16.5 0 30-13.5 30-30S66.5 20 50 20z' fill='white'/%3E%3C/svg%3E">
+</head>
+<body class="tema-escuro">
+
+  <!-- ====================================================================
+       MODAL DE LOGIN RÁPIDO (SE NÃO ESTIVER AUTENTICADO)
+       ==================================================================== -->
+  <div id="modal-login-chat" class="modal-backdrop" style="display: none;">
+    <div class="modal-card-login">
+      <div class="login-header">
+        <div class="logo-chat-marca" id="login-marca-logo">W</div>
+        <h2 id="login-marca-nome">WooAPI Web</h2>
+        <p>Acesse com seu e-mail para carregar suas conexões de WhatsApp</p>
+      </div>
+      <div id="login-erro" class="alerta-erro" style="display: none;"></div>
+      <form onsubmit="fazerLoginChat(event)">
+        <div class="campo-grupo">
+          <label for="chat-email">E-mail</label>
+          <input type="email" id="chat-email" class="chat-input" placeholder="seu@email.com" required>
+        </div>
+        <div class="campo-grupo">
+          <label for="chat-senha">Senha</label>
+          <input type="password" id="chat-senha" class="chat-input" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-chat-primario" id="btn-login-submit">Entrar no WhatsApp Web</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       LAYOUT PRINCIPAL ESTILO WHATSAPP WEB
+       ==================================================================== -->
+  <div class="app-layout">
+    
+    <!-- COLUNA DA ESQUERDA: LISTA DE CONVERSAS -->
+    <aside class="sidebar-chat">
+      
+      <!-- Topo da Sidebar -->
+      <header class="sidebar-header">
+        <div class="usuario-perfil" title="Minha Conta">
+          <div class="avatar-circulo" id="minha-foto-avatar">P</div>
+          <div class="usuario-meta">
+            <span class="usuario-nome-display" id="usuario-nome-display">Paulo</span>
+            <span class="plano-badge-pill" id="badge-plano-topo" onclick="abrirModalRecursosPlano()">PRO</span>
+          </div>
+        </div>
+
+        <div class="seletor-instancia-box">
+          <select id="select-instancia" onchange="trocarInstanciaAtiva(this.value)" title="Instância ativa do WhatsApp">
+            <option value="">Carregando conexões...</option>
+          </select>
+        </div>
+
+        <div class="sidebar-acoes">
+          <button class="btn-icone" onclick="abrirModalNovaConversa()" title="Nova Conversa">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </button>
+          <button class="btn-icone" onclick="abrirModalRecursosPlano()" title="Super-Poderes da API & Recursos do Plano">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </button>
+          <button class="btn-icone" onclick="voltarParaDashboard()" title="Voltar ao Painel Geral">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Barra de Busca e Filtros -->
+      <div class="busca-barra-container">
+        <div class="busca-input-wrapper">
+          <span class="lupa-icone">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </span>
+          <input type="text" id="campo-busca-chat" placeholder="Pesquisar ou começar uma nova conversa" oninput="filtrarConversas(this.value)">
+          <button id="btn-limpar-busca" class="btn-limpar" style="display: none;" onclick="limparBusca()">✕</button>
+        </div>
+
+        <div class="filtros-pills">
+          <button class="filtro-pill ativo" data-filtro="todos" onclick="aplicarFiltroConversas('todos', this)">Todas</button>
+          <button class="filtro-pill" data-filtro="nao_lidas" onclick="aplicarFiltroConversas('nao_lidas', this)">Não lidas</button>
+          <button class="filtro-pill" data-filtro="grupos" onclick="aplicarFiltroConversas('grupos', this)">Grupos</button>
+        </div>
+      </div>
+
+      <!-- Lista de Conversas Recentes -->
+      <div class="lista-conversas-scroll" id="lista-conversas">
+        <div class="estado-vazio-conversas">
+          <div class="spinner-carregando"></div>
+          <p>Sincronizando conversas do WhatsApp...</p>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- COLUNA DA DIREITA: ÁREA DO CHAT ATIVO -->
+    <main class="chat-area-main" id="chat-area-main">
+      
+      <!-- TELA INICIAL (QUANDO NENHUM CHAT ESTÁ ABERTO) -->
+      <div class="tela-boas-vindas" id="tela-boas-vindas">
+        <div class="doodle-fundo-decorativo"></div>
+        <div class="conteudo-boas-vindas">
+          <div class="logo-central-whatsapp">
+            <svg width="84" height="84" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </div>
+          <h2>WooAPI Web</h2>
+          <p>O WhatsApp Web turbinado com a infraestrutura e os super-poderes da sua API.</p>
+          <div class="cards-destaques-web">
+            <div class="card-destaque">
+              <span class="icone-destaque">⚡</span>
+              <strong>Respostas Rápidas</strong>
+              <small>Envie respostas prontas digitando <code>/atalho</code></small>
+            </div>
+            <div class="card-destaque">
+              <span class="icone-destaque">👻</span>
+              <strong>Ghost Mode Ativo</strong>
+              <small>Mensagens apagadas pelo contato continuam visíveis para você</small>
+            </div>
+            <div class="card-destaque">
+              <span class="icone-destaque">🎙️</span>
+              <strong>Áudios Gravados na Hora</strong>
+              <small>Envio PTT com onda sonora verde nativa do WhatsApp</small>
+            </div>
+          </div>
+          <div class="rodape-criptografia">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>Conexão criptografada de ponta a ponta via WhatsApp Multidevice oficial</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TELA DE QR CODE (SE A INSTÂNCIA ESTIVER DESCONECTADA) -->
+      <div class="tela-qrcode-pareamento" id="tela-qrcode-pareamento" style="display: none;">
+        <div class="card-qrcode-chat">
+          <div class="icone-alerta-qr">📱</div>
+          <h3>Instância Desconectada</h3>
+          <p>Abra o WhatsApp no seu celular, vá em <strong>Aparelhos Conectados</strong> e aponte a câmera para parear:</p>
+          <div class="box-imagem-qr" id="box-imagem-qr">
+            <div class="spinner-carregando"></div>
+          </div>
+          <button class="btn-chat-primario" onclick="solicitarNovoQRCode()">Atualizar QR Code</button>
+        </div>
+      </div>
+
+      <!-- JANELA DE CONVERSA ATIVA -->
+      <section class="janela-chat-ativa" id="janela-chat-ativa" style="display: none;">
+        
+        <!-- Topo da Conversa -->
+        <header class="chat-header">
+          <div class="contato-info-topo" onclick="abrirDetalhesContato()">
+            <div class="avatar-circulo" id="chat-ativo-avatar">C</div>
+            <div class="contato-textos">
+              <span class="contato-nome" id="chat-ativo-nome">Contato</span>
+              <span class="contato-status-linha" id="chat-ativo-status">online</span>
+            </div>
+          </div>
+
+          <div class="chat-header-acoes">
+            <button class="btn-icone" onclick="abrirModalSnippets()" title="Respostas Rápidas (/atalhos)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </button>
+            <button class="btn-icone" onclick="abrirModalBotoesInterativos()" title="Criar Botões & Enquetes">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </button>
+            <button class="btn-icone" onclick="fecharConversaAtiva()" title="Fechar Conversa">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <!-- Barra de Ferramentas / Super-Poderes WooAPI -->
+        <div class="barra-super-poderes" id="barra-super-poderes">
+          <span class="tag-toolkit">WOOAPI TOOLKIT:</span>
+          <button class="btn-toolkit" onclick="abrirModalSnippets()" id="btn-tk-snippets">
+            ⚡ Respostas Rápidas
+          </button>
+          <button class="btn-toolkit" onclick="abrirModalBotoesInterativos()" id="btn-tk-botoes">
+            🔘 Botões Interativos
+          </button>
+          <button class="btn-toolkit" onclick="abrirModalAgendamento()" id="btn-tk-agendar">
+            🕒 Agendar Retorno
+          </button>
+          <button class="btn-toolkit" onclick="abrirModalCopilotIA()" id="btn-tk-ia">
+            🤖 IA Copilot
+          </button>
+        </div>
+
+        <!-- Área de Rolagem de Mensagens -->
+        <div class="mensagens-container" id="mensagens-container">
+          <div class="doodle-fundo-chat"></div>
+          <div class="mensagens-lista" id="mensagens-lista">
+            <!-- Mensagens renderizadas dinamicamente via JS -->
+          </div>
+        </div>
+
+        <!-- Rodapé de Envio de Mensagem -->
+        <footer class="chat-footer">
+          <button class="btn-icone btn-footer" onclick="alternarMenuAnexos(event)" title="Anexar Mídia ou Documento">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+
+          <!-- Menu Dropdown de Anexos -->
+          <div class="dropdown-anexos" id="dropdown-anexos" style="display: none;">
+            <label class="item-anexo" onclick="dispararInputArquivo('imagem')">
+              <span class="icone-anexo foto">📷</span> Fotos e Vídeos
+              <input type="file" id="input-anexo-midia" accept="image/*,video/*" style="display: none;" onchange="enviarMidiaSelecionada(this, 'imagem')">
+            </label>
+            <label class="item-anexo" onclick="dispararInputArquivo('documento')">
+              <span class="icone-anexo doc">📄</span> Documento ou PDF
+              <input type="file" id="input-anexo-doc" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" style="display: none;" onchange="enviarMidiaSelecionada(this, 'documento')">
+            </label>
+            <label class="item-anexo" onclick="abrirModalContatoVCard()">
+              <span class="icone-anexo contato">👤</span> Contato
+            </label>
+          </div>
+
+          <div class="campo-digitacao-wrapper">
+            <textarea id="campo-texto-msg" rows="1" placeholder="Digite uma mensagem ou digite / para respostas rápidas" oninput="ajustarAlturaTextarea(this); monitorarAtalhos(this.value)" onkeydown="tratarKeyDownMensagem(event)"></textarea>
+            
+            <!-- Sugestão Flutuante de Resposta Rápida (quando digita /) -->
+            <div class="sugestao-snippets-popover" id="sugestao-snippets-popover" style="display: none;">
+              <div class="sugestao-titulo">RESPOSTAS RÁPIDAS (SELECIONE COM ENTER):</div>
+              <div id="lista-sugestoes-snippets"></div>
+            </div>
+          </div>
+
+          <!-- Gravador de Áudio PTT -->
+          <div class="gravando-audio-painel" id="gravando-audio-painel" style="display: none;">
+            <button class="btn-icone btn-cancelar-gravacao" onclick="cancelarGravacaoAudio()" title="Descartar áudio">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+            <div class="audio-onda-tempo">
+              <span class="bolinha-gravando"></span>
+              <span id="tempo-gravacao">00:00</span>
+            </div>
+            <button class="btn-enviar-audio-gravado" onclick="finalizarEEnviarGravacaoAudio()" title="Enviar áudio gravado">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+          </div>
+
+          <button class="btn-icone btn-enviar-msg" id="btn-enviar-ou-gravar" onclick="cliqueEnviarOuGravar()" title="Enviar Mensagem">
+            <svg id="svg-mic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            <svg id="svg-send" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display: none;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </footer>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- ====================================================================
+       MODAIS DE SUPER-PODERES & RECURSOS POR PLANO
+       ==================================================================== -->
+  
+  <!-- MODAL: RESPOSTAS RÁPIDAS -->
+  <div class="modal-backdrop" id="modal-snippets" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>⚡ Respostas Rápidas (/atalhos)</h3>
+        <button class="btn-fechar-modal" onclick="fecharModal('modal-snippets')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-dica">Cadastre mensagens frequentes. Digite <code>/atalho</code> no chat para enviar instantaneamente.</p>
+        <div class="formulario-snippet">
+          <input type="text" id="novo-snippet-atalho" placeholder="/pix ou /ola" class="chat-input" style="width: 140px;">
+          <input type="text" id="novo-snippet-texto" placeholder="Texto da resposta..." class="chat-input" style="flex: 1;">
+          <button class="btn-chat-primario" onclick="salvarNovoSnippet()">Salvar</button>
+        </div>
+        <div class="lista-snippets-existentes" id="lista-snippets-existentes">
+          <!-- Renderizado via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: BOTÕES INTERATIVOS E ENQUETES -->
+  <div class="modal-backdrop" id="modal-botoes" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>🔘 Enviar Mensagem com Botões / Enquete</h3>
+        <button class="btn-fechar-modal" onclick="fecharModal('modal-botoes')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="trava-plano-botoes" class="alerta-bloqueio-plano" style="display: none;">
+          🔒 O envio de botões e menus interativos é um recurso do <strong>Plano Business Pro</strong> ou <strong>Enterprise</strong>.
+        </div>
+        <div class="campo-grupo">
+          <label>Texto da Mensagem</label>
+          <textarea id="botoes-msg-corpo" class="chat-input" rows="3" placeholder="Olá! Escolha uma das opções abaixo:"></textarea>
+        </div>
+        <div class="campo-grupo">
+          <label>Botão 1 (Texto da Opção)</label>
+          <input type="text" id="botoes-opcao-1" class="chat-input" placeholder="Ex: Falar com Suporte">
+        </div>
+        <div class="campo-grupo">
+          <label>Botão 2 (Texto da Opção)</label>
+          <input type="text" id="botoes-opcao-2" class="chat-input" placeholder="Ex: Segunda Via do Boleto">
+        </div>
+        <div class="campo-grupo">
+          <label>Botão 3 (Opcional)</label>
+          <input type="text" id="botoes-opcao-3" class="chat-input" placeholder="Ex: Ver Catálogo">
+        </div>
+        <button class="btn-chat-primario" id="btn-enviar-botoes" onclick="executarEnvioBotoes()">Disparar Botões Interativos</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AGENDAMENTO DE MENSAGEM -->
+  <div class="modal-backdrop" id="modal-agendamento" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>🕒 Agendar Mensagem</h3>
+        <button class="btn-fechar-modal" onclick="fecharModal('modal-agendamento')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="trava-plano-agendar" class="alerta-bloqueio-plano" style="display: none;">
+          🔒 O agendamento de mensagens está disponível a partir do <strong>Plano Business Pro</strong>.
+        </div>
+        <div class="campo-grupo">
+          <label>Data e Hora do Disparo</label>
+          <input type="datetime-local" id="agendar-data-hora" class="chat-input">
+        </div>
+        <div class="campo-grupo">
+          <label>Mensagem a Ser Enviada</label>
+          <textarea id="agendar-texto" class="chat-input" rows="3" placeholder="Olá, este é seu lembrete agendado..."></textarea>
+        </div>
+        <button class="btn-chat-primario" id="btn-confirmar-agendamento" onclick="executarAgendamento()">Agendar Disparo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RECURSOS DO PLANO ATIVO -->
+  <div class="modal-backdrop" id="modal-recursos-plano" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>✨ Super-Poderes & Recursos do seu Plano</h3>
+        <button class="btn-fechar-modal" onclick="fecharModal('modal-recursos-plano')">✕</button>
+      </div>
+      <div class="modal-body" id="modal-corpo-plano">
+        <!-- Preenchido dinamicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVA CONVERSA -->
+  <div class="modal-backdrop" id="modal-nova-conversa" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Nova Conversa</h3>
+        <button class="btn-fechar-modal" onclick="fecharModal('modal-nova-conversa')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="campo-grupo">
+          <label>Número de WhatsApp (com DDD)</label>
+          <input type="text" id="novo-chat-numero" class="chat-input" placeholder="11 99999-9999 ou 5511999999999">
+        </div>
+        <div class="campo-grupo">
+          <label>Primeira Mensagem</label>
+          <textarea id="novo-chat-msg" class="chat-input" rows="3" placeholder="Olá! Como posso ajudar você hoje?"></textarea>
+        </div>
+        <button class="btn-chat-primario" onclick="iniciarNovaConversaSubmit()">Iniciar Conversa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS PRINCIPAIS -->
+  <script src="chat.js?v=20261105v1"></script>
+</body>
+</html>

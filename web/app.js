@@ -2360,59 +2360,83 @@ async function salvarInfraestruturaRevenda() {
 }
 
 // ============================================================================
-// CARREGAR PLANOS E ASSINATURAS (B2B SAAS TIER 01, 02 E 03)
+// CARREGAR PLANOS E ASSINATURAS (TABELA WOOHUB - 15% OFF COMPARADO À UAZAPI)
 // ============================================================================
 const CATALOGO_PLANOS_PADRAO = [
   {
-    id: 'basico',
-    nome: 'Starter / Básico',
-    preco_mensal: 'R$ 197,00',
-    limite_instancias: 5,
-    franquia_mensagens: '30.000 disparos/mês',
+    id: 'ate_2_dispositivos',
+    nome: 'até 2 dispositivos*',
+    preco_original: 'R$ 38,00',
+    preco_mensal: 'R$ 32,30 / mensal',
+    nota_sub: 'R$ 16,15 por dispositivo (15% OFF)',
+    subtitulo: 'Ofereça serviços de integração WhatsApp para seus clientes de forma limitada.',
+    limite_instancias: 2,
+    franquia_mensagens: 'Envio de mensagens ilimitado',
+    publico: 'ambos',
+    destaque: false,
+    recursos: [
+      'Use seu sistema para geração de QR code e conexão com o WhatsApp',
+      'Quantidade limitada de dispositivos (2)',
+      'Envio de mensagens ilimitado',
+      'Gerenciamento de grupos',
+      'Webhook em tempo real com HMAC SHA-256',
+      'API estável e sempre atualizada (Motor Go)',
+      'Documentação completa'
+    ]
+  },
+  {
+    id: 'servidor_lite',
+    nome: 'Servidor LITE',
+    preco_original: 'R$ 138,00',
+    preco_mensal: 'R$ 117,30 / mensal',
+    nota_sub: 'R$ 1,17 por dispositivo (15% OFF)',
+    subtitulo: 'Ofereça serviços de integração WhatsApp para seus clientes de forma profissional.',
+    limite_instancias: 100,
+    franquia_mensagens: 'Envio de mensagens ilimitado',
+    publico: 'revendedor',
+    destaque: true,
+    recursos: [
+      'Use seu sistema para geração de QR code e conexão com o WhatsApp',
+      'Até 100 dispositivos conectados à API',
+      'OBRIGATÓRIO: Supabase (PostgreSQL) próprio do revendedor',
+      'OBRIGATÓRIO: MinIO / S3 próprio do revendedor para mídias',
+      'Painel White-Label com Logotipo e Cores da Revenda',
+      'Envio de mensagens ilimitado',
+      'Gerenciamento de grupos',
+      'Webhook em tempo real com retry automático',
+      'API estável em Go puro (baixo consumo de RAM)',
+      'Documentação completa'
+    ]
+  },
+  {
+    id: 'servidor_pro',
+    nome: 'Servidor PRO',
+    preco_original: 'R$ 195,00',
+    preco_mensal: 'R$ 165,75 / mensal',
+    nota_sub: 'R$ 0,55 por dispositivo (15% OFF)',
+    subtitulo: 'Ofereça serviços de integração WhatsApp para seus clientes de forma profissional.',
+    limite_instancias: 300,
+    franquia_mensagens: 'Envio de mensagens ilimitado',
     publico: 'revendedor',
     destaque: false,
     recursos: [
-      'Até 5 Instâncias WhatsApp Simultâneas',
-      'Pacote 1: Texto, Áudio PTT Microfone Verde, Vídeo, PDF e Enquetes',
-      'Pacote 2: Validador 9º Dígito BR + Download Automático de Mídias',
-      'Webhooks em Tempo Real com Assinatura HMAC SHA-256'
-    ]
-  },
-  {
-    id: 'profissional',
-    nome: 'Business Pro',
-    preco_mensal: 'R$ 297,00',
-    limite_instancias: 20,
-    franquia_mensagens: '100.000 disparos/mês',
-    publico: 'ambos',
-    destaque: true,
-    recursos: [
-      'Até 20 Instâncias WhatsApp Simultâneas',
-      'Todos os recursos do Pacote 1 e Pacote 2 liberados',
-      'Pacote 3: Grupos, Menção Fantasma (@todos) e Status 24h',
-      'Pacote 4: Blindagem Anti-Ban, Proxy SOCKS5/HTTP e Anti-Chamadas VoIP',
-      'Etiquetas WhatsApp Business e Simulação Humana'
-    ]
-  },
-  {
-    id: 'enterprise',
-    nome: 'Enterprise White-Label & Stack',
-    preco_mensal: 'R$ 497,00',
-    limite_instancias: 150,
-    franquia_mensagens: 'Disparos Ilimitados',
-    publico: 'mega',
-    destaque: false,
-    recursos: [
-      'Até 150 Instâncias WhatsApp + Subcontas de Clientes',
-      'Painel 100% White-Label com Domínio Próprio (CNAME) e Cores',
-      'Infraestrutura Isolada Opcional (BYO Supabase PostgreSQL + MinIO S3)',
-      'Deploy Dedicado via Stack Portainer com SLA 99,98%'
+      'Use seu sistema para geração de QR code e conexão com o WhatsApp',
+      'Até 300 dispositivos conectados à API',
+      'OBRIGATÓRIO: Supabase (PostgreSQL) próprio do revendedor',
+      'OBRIGATÓRIO: MinIO / S3 próprio do revendedor para mídias',
+      'Painel White-Label com Domínio Próprio (CNAME) e SMTP',
+      'Envio de mensagens ilimitado',
+      'Gerenciamento de grupos',
+      'Webhook em tempo real de alta performance',
+      'Proxy SOCKS5/HTTP individual por instância (anti-ban)',
+      'API estável em Go puro com suporte prioritário'
     ]
   }
 ];
 
 function obterListaPlanos() {
-  const salvos = localStorage.getItem('woohub_planos_catalogo');
+  const CHAVE_CATALOGO = 'woohub_planos_catalogo_uazapi_15off_v1';
+  const salvos = localStorage.getItem(CHAVE_CATALOGO);
   if (salvos) {
     try {
       const parsed = JSON.parse(salvos);
@@ -2421,12 +2445,12 @@ function obterListaPlanos() {
       console.warn('Erro ao ler catálogo local de planos:', e);
     }
   }
-  localStorage.setItem('woohub_planos_catalogo', JSON.stringify(CATALOGO_PLANOS_PADRAO));
+  localStorage.setItem(CHAVE_CATALOGO, JSON.stringify(CATALOGO_PLANOS_PADRAO));
   return [...CATALOGO_PLANOS_PADRAO];
 }
 
 function salvarListaPlanos(lista) {
-  localStorage.setItem('woohub_planos_catalogo', JSON.stringify(lista));
+  localStorage.setItem('woohub_planos_catalogo_uazapi_15off_v1', JSON.stringify(lista));
 }
 
 async function carregarPlanos() {
@@ -2438,25 +2462,38 @@ async function carregarPlanos() {
 
   grid.innerHTML = planos.map(p => {
     const isDestaque = !!p.destaque;
-    const franquiaTexto = p.franquia_mensagens || 'Mensagens Ilimitadas';
-    const recursosHTML = (p.recursos || []).map(r => `
-      <div class="vantagem-item" style="margin-bottom: 0.45rem; font-size: 0.85rem;">
-        <span class="check-circulo">&#10003;</span> ${escaparHTML(r)}
-      </div>
-    `).join('');
+    const franquiaTexto = p.franquia_mensagens || 'Envio de mensagens ilimitado';
+    const recursosHTML = (p.recursos || []).map(r => {
+      const isObrigatorio = r.toUpperCase().includes('OBRIGATÓRIO');
+      return `
+        <div class="vantagem-item" style="margin-bottom: 0.45rem; font-size: 0.85rem; ${isObrigatorio ? 'color: #b45309; font-weight: 600;' : ''}">
+          <span class="check-circulo" style="${isObrigatorio ? 'background: #fef3c7; color: #b45309; border-color: #f59e0b;' : ''}">&#10003;</span> ${escaparHTML(r)}
+        </div>
+      `;
+    }).join('');
 
     return `
       <div class="card-dashboard" style="border: ${isDestaque ? '2px solid #059669' : '1px solid #e2e8f0'}; position: relative; display: flex; flex-direction: column; justify-content: space-between; border-radius: 12px; background: #fff; padding: 1.5rem;">
         <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <h3 style="font-size: 1.18rem; font-weight: 800; color: #0f172a; margin: 0;">${escaparHTML(p.nome)}</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <h3 style="font-size: 1.22rem; font-weight: 800; color: #0f172a; margin: 0;">${escaparHTML(p.nome)}</h3>
             ${isDestaque ? '<span class="badge-plano-destaque">PLANO ATIVO</span>' : '<span class="badge-plano azul" style="cursor:pointer;" onclick="selecionarPlanoAtivo(\'' + escaparHTML(p.id) + '\')">Disponível</span>'}
           </div>
-          <div style="font-size: 1.85rem; font-weight: 800; color: #059669; margin: 0.5rem 0;">
-            ${escaparHTML(p.preco_mensal)} <span style="font-size: 0.85rem; color: #64748b; font-weight: 500;">/ mês</span>
+          ${p.subtitulo ? `<p style="font-size: 0.82rem; color: #64748b; margin-bottom: 0.65rem; line-height: 1.3;">${escaparHTML(p.subtitulo)}</p>` : ''}
+          <div style="display: flex; align-items: baseline; gap: 0.45rem; margin: 0.25rem 0 0.15rem 0; flex-wrap: wrap;">
+            ${p.preco_original ? `<span style="font-size: 1rem; color: #94a3b8; text-decoration: line-through; font-weight: 600;">${escaparHTML(p.preco_original)}</span>` : ''}
+            <div style="font-size: 1.95rem; font-weight: 800; color: #059669;">
+              ${escaparHTML(p.preco_mensal)}
+            </div>
+            <span style="background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; border-radius: 6px; padding: 0.12rem 0.45rem; font-size: 0.72rem; font-weight: 800; text-transform: uppercase;">15% OFF</span>
           </div>
-          <p style="font-size: 0.84rem; color: #64748b; margin-bottom: 1rem;">
-            Franquia: <strong>${escaparHTML(franquiaTexto)}</strong> &bull; Até <strong>${Number(p.limite_instancias) || 1} instâncias</strong>
+          ${p.nota_sub ? `
+            <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 0.85rem; font-style: italic;">
+              ${escaparHTML(p.nota_sub.startsWith('esse valor') ? p.nota_sub : 'esse valor representa ' + p.nota_sub)}
+            </div>
+          ` : ''}
+          <p style="font-size: 0.84rem; color: #475569; margin-bottom: 1rem; border-top: 1px solid #f1f5f9; padding-top: 0.5rem;">
+            Franquia: <strong>${escaparHTML(franquiaTexto)}</strong> &bull; Até <strong>${Number(p.limite_instancias) || 1} dispositivos</strong>
           </p>
           ${isDestaque ? `
             <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.65rem 0.85rem; margin-bottom: 1rem; font-size: 0.82rem; color: #166534;">

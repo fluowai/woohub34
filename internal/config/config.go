@@ -30,6 +30,9 @@ type Config struct {
 	ResendAPIKey            string
 	ResendFrom              string
 	ResendFromName          string
+	ResendOAuthClientID     string
+	ResendOAuthClientSecret string
+	ResendOAuthRedirectURI  string
 
 	// Licenciamento & Proteção de Stack (Portainer / BYOI)
 	LicencaChave              string
@@ -50,6 +53,14 @@ type Config struct {
 }
 
 var AppConfig *Config
+
+// ObterConfig retorna a configuração atual ou carrega caso ainda não tenha sido inicializada
+func ObterConfig() *Config {
+	if AppConfig == nil {
+		return CarregarConfiguracao()
+	}
+	return AppConfig
+}
 
 // CarregarConfiguracao carrega arquivo .env (se existir) e inicializa as variáveis de ambiente
 func CarregarConfiguracao() *Config {
@@ -89,6 +100,9 @@ func CarregarConfiguracao() *Config {
 	resendAPIKey := obterEnv("RESEND_API_KEY", "")
 	resendFrom := obterEnv("RESEND_FROM", "noreply@seudominio.com.br")
 	resendFromName := obterEnv("RESEND_FROM_NAME", "WooHub")
+	resendOAuthClientID := obterEnv("RESEND_OAUTH_CLIENT_ID", "")
+	resendOAuthClientSecret := obterEnv("RESEND_OAUTH_CLIENT_SECRET", "")
+	resendOAuthRedirectURI := obterEnv("RESEND_OAUTH_REDIRECT_URI", "")
 
 	seedPadrao := "true"
 	if ambiente == "production" || ambiente == "prod" {
@@ -161,6 +175,9 @@ func CarregarConfiguracao() *Config {
 		ResendAPIKey:              resendAPIKey,
 		ResendFrom:                resendFrom,
 		ResendFromName:            resendFromName,
+		ResendOAuthClientID:     resendOAuthClientID,
+		ResendOAuthClientSecret: resendOAuthClientSecret,
+		ResendOAuthRedirectURI:  resendOAuthRedirectURI,
 		LicencaChave:              licencaChave,
 		LicencaServidorURL:        licencaServidorURL,
 		DominioOficial:            dominioOficial,

@@ -1,4 +1,56 @@
-# Diário de Bordo (Worklog) - WooHub API
+# Diário de Bordo (Worklog) - WooHub API
+
+## [2026-11-05] Aplicação de 15% de Desconto Estratégico em Relação à Uazapi
+
+### Diagnóstico e Resoluções
+- **Precificação Estratégica Competitiva (15% OFF vs Uazapi):**
+  - Aplicado desconto linear de 15% sobre os planos de referência da Uazapi em [`web/app.js`](file:///c:/Users/paulo/whatsmeow/web/app.js) e [`web/index.html`](file:///c:/Users/paulo/whatsmeow/web/index.html):
+    - **até 2 dispositivos\***: De ~~R$ 38,00~~ por **R$ 32,30 / mês** (representa **R$ 16,15 por dispositivo**).
+    - **Servidor LITE**: De ~~R$ 138,00~~ por **R$ 117,30 / mês** (representa **R$ 1,17 por dispositivo**, até 100 conexões).
+    - **Servidor PRO**: De ~~R$ 195,00~~ por **R$ 165,75 / mês** (representa **R$ 0,55 por dispositivo**, até 300 conexões).
+  - Exibição de preço riscado (preço original) e badge verde de destaque `15% OFF` em todos os cards do catálogo.
+- **Manutenção da Obrigatoriedade de Supabase + MinIO para Revendas:**
+  - Preservada a regra obrigatória para os planos **Servidor LITE** e **Servidor PRO**, garantindo que o revendedor utilize seu próprio banco Supabase (PostgreSQL) e armazenamento MinIO (S3), mantendo o custo de infraestrutura para a matriz em patamares mínimos e margem líquida superior a 85%.
+  - Atualizado o dropdown de planos do modal de novo cliente.
+  - Atualizado o cachebuster de assets para `v20261105v4`.
+- **Validação de Testes:**
+  - Suíte completa de testes da API aprovada (`go test ./internal/api/...`).
+
+## [2026-11-05] Documentação Oficial Pública Tri-língue (/docs) e Análise Arquitetural de MCP para IA
+
+### Diagnóstico e Resoluções
+- **Separação Estrita de Segurança & Rota Pública (/docs e /documentacao):**
+  - Anteriormente, o link `/docs` caía no router SPA de [`web/app.js`](file:///c:/Users/paulo/whatsmeow/web/app.js), que exigia autenticação prévia de usuário/admin e forçava o redirecionamento para a tela de login para qualquer visitante sem token.
+  - Implementado em [`internal/api/routes.go`](file:///c:/Users/paulo/whatsmeow/internal/api/routes.go) o tratamento dedicado para `/docs`, `/docs/`, `/documentacao` e `/documentacao/`.
+  - **Apenas a documentação é pública**: Qualquer pessoa ou cliente externo pode acessar a documentação sem login, enquanto todas as demais rotas (`/`, `/instancias`, `/testador`, `/planos`, `/revendedores`, etc.) e APIs continuam rigorosamente protegidas por autenticação RBAC.
+  - Criado o arquivo [`web/docs.html`](file:///c:/Users/paulo/whatsmeow/web/docs.html) e embutido no binário Go compilado através de [`web/embed.go`](file:///c:/Users/paulo/whatsmeow/web/embed.go).
+- **Suporte Nativo a 3 Idiomas (PT-BR, EN, ES):**
+  - A documentação conta com seletor instantâneo de idioma no topo (Português do Brasil 🇧🇷, Inglês 🇺🇸 e Espanhol 🇪🇸).
+  - Tradução dinâmica completa de introdução, tabelas de parâmetros, headers e descrições sem recarregar a página, com persistência automática no `localStorage` e suporte a query param `?lang=en` ou `?lang=es`.
+  - Exemplos completos com abas cURL, JavaScript e Python e botão de cópia de código em 1 clique.
+- **Análise Técnica e Arquitetura de MCP (Model Context Protocol):**
+  - Adicionada seção dedicada e criada a documentação técnica [`DEV/ARQUITETURA_MCP_E_DOCUMENTACAO_PUBLICA.md`](file:///c:/Users/paulo/whatsmeow/DEV/ARQUITETURA_MCP_E_DOCUMENTACAO_PUBLICA.md) detalhando a integração da API com agentes de Inteligência Artificial (Claude Desktop, Cursor, Antigravity, ChatGPT, LangChain).
+  - Comparadas 3 abordagens (Nativa em Go via SSE com `mcp-go`, Standalone Node.js SDK `@modelcontextprotocol/sdk` e OpenAPI Bridge), recomendando o servidor SSE nativo no binário Go para manter zero dependências adicionais no Portainer.
+  - Mapeadas as ferramentas (tools) prioritárias: `whatsapp_send_text`, `whatsapp_send_media`, `whatsapp_send_poll`, `whatsapp_verify_number`, `whatsapp_get_status` e `whatsapp_group_ghost_mention`.
+- **Testes Unitários Automatizados:**
+  - Criado o teste `TestPublicDocumentationRoutes` em [`internal/api/api_test.go`](file:///c:/Users/paulo/whatsmeow/internal/api/api_test.go), validando entrega com status 200 OK, Content-Type text/html, ausência de exigência de credenciais e integridade do conteúdo tri-língue e MCP.
+  - Testes executados e aprovados com 100% de sucesso (`go test -v -run "TestSPAFallbackRoutes|TestPublicDocumentationRoutes" ./internal/api/...`).
+
+## [2026-11-05] Alinhamento Oficial de Preços (Uazapi) e Política de Supabase + MinIO Obrigatórios
+
+### Diagnóstico e Resoluções
+- **Estrutura Oficial de Planos Comerciais (Uazapi):**
+  - O catálogo comercial padrão foi atualizado em [`web/app.js`](file:///c:/Users/paulo/whatsmeow/web/app.js) para espelhar rigorosamente a tabela oficial da **Uazapi** (`https://uazapi.dev/`):
+    - **Até 2 dispositivos\***: `R$ 38 / mensal` (representa `R$ 19,00 por dispositivo`). Envio ilimitado, grupos, webhooks e documentação completa.
+    - **Servidor LITE**: `R$ 138 / mensal` (representa `R$ 1,38 por dispositivo`). Até 100 dispositivos conectados à API, com painel white-label.
+    - **Servidor PRO**: `R$ 195 / mensal` (representa `R$ 0,65 por dispositivo`). Até 300 dispositivos conectados à API, domínio próprio CNAME, proxy SOCKS5 e suporte prioritário.
+- **Obrigatoriedade Técnica de Supabase e MinIO para Revendas:**
+  - Definida e documentada na UI e nas regras de planos a exigência inegociável de **BYO (Bring Your Own)** para revendedores:
+    - O provisionamento de servidores (LITE e PRO) exige que a revenda conecte seu próprio banco de dados **Supabase (PostgreSQL)** e armazenamento de mídias **MinIO S3**.
+    - Isso blinda o negócio: isola 100% dos dados/mídias em conformidade com a LGPD e zera o custo de storage e banco para a matriz do WooHub, garantindo margem de lucro líquida de 80% a 95% mesmo praticando os valores de R$ 138 e R$ 195.
+  - No frontend, os requisitos obrigatórios são destacados com alertas visuais de aviso em [`web/index.html`](file:///c:/Users/paulo/whatsmeow/web/index.html) e nos cards de vantagens de [`web/app.js`](file:///c:/Users/paulo/whatsmeow/web/app.js).
+  - Atualizado o cachebuster de assets para `v20261105v3`.
+  - Suíte de testes unitários da API executada e aprovada com 100% de sucesso.
 
 ## [2026-11-05] Implementação de SPA Fallback Routing (Resolução de 404 em /testador e rotas diretas)
 
