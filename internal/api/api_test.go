@@ -73,6 +73,25 @@ func TestSegurancaWebhookAntiSSRF(t *testing.T) {
 	}
 }
 
+func TestSPAFallbackRoutes(t *testing.T) {
+	rotas := prepararAmbienteTeste(t)
+
+	rotasSPA := []string{"/testador", "/planos", "/revendedores", "/whitelabel", "/logs", "/docs"}
+	for _, rota := range rotasSPA {
+		req := httptest.NewRequest(http.MethodGet, rota, nil)
+		rec := httptest.NewRecorder()
+		rotas.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("Esperava 200 OK na rota SPA %s, obteve %d", rota, rec.Code)
+		}
+		contentType := rec.Header().Get("Content-Type")
+		if !strings.Contains(contentType, "text/html") {
+			t.Errorf("Esperava text/html na rota SPA %s, obteve %s", rota, contentType)
+		}
+	}
+}
+
 func TestNormalizacaoBrasilENonoDigito(t *testing.T) {
 	num, err := core.NormalizarNumeroBrasil("(11) 98765-4321")
 	if err != nil || num != "5511987654321" {

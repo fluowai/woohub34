@@ -1,5 +1,21 @@
 # Diário de Bordo (Worklog) - WooHub API
 
+## [2026-11-05] Implementação de SPA Fallback Routing (Resolução de 404 em /testador e rotas diretas)
+
+### Diagnóstico e Resoluções
+- **Erro `GET https://wooapi.wootech.com.br/testador 404 (Not Found)`:**
+  - O frontend utiliza HTML5 History Routing (`history.pushState`) para navegação entre abas (`/testador`, `/planos`, `/revendedores`, etc.).
+  - Ao recarregar a página ou acessar diretamente a URL no navegador, o servidor Go encaminhava a requisição para o `http.FileServer`, que procurava um arquivo físico estático chamado `testador` e respondia `404 Not Found`.
+- **Implementação do SPA Fallback Handler:**
+  - Em [`internal/api/routes.go`](file:///c:/Users/paulo/whatsmeow/internal/api/routes.go), a rota raiz `/` foi aprimorada:
+    - Rotas de API (`/api/`) continuam retornando `404 Not Found` em formato JSON.
+    - Arquivos estáticos com extensões reconhecidas (`.js`, `.css`, `.ico`, `.png`, `.svg`, `.json`) são servidos diretamente pelo FileServer com seus respectivos MIME types e UTF-8.
+    - Qualquer rota frontend limpa sem extensão (ex: `/testador`, `/planos`, `/logs`, etc.) agora entrega `index.html` com status HTTP `200 OK` e `Content-Type: text/html; charset=utf-8`.
+    - No carregamento, o script `web/app.js` detecta a rota via `secaoDaURL()` e exibe imediatamente a subseção correspondente (`sub-testador`).
+- **Testes Automatizados:**
+  - Adicionado o teste `TestSPAFallbackRoutes` em [`internal/api/api_test.go`](file:///c:/Users/paulo/whatsmeow/internal/api/api_test.go) validando status 200 OK e Content-Type text/html para rotas `/testador`, `/planos`, `/revendedores`, `/whitelabel`, `/logs`, `/docs`.
+  - Todos os testes de API validados e aprovados com 100% de sucesso (`go test ./internal/api/...`).
+
 ## [2026-11-05] Correção da Aba Planos (Loop Infinito) e Implementação de Criação/Edição/Exclusão
 
 ### Diagnóstico e Resoluções

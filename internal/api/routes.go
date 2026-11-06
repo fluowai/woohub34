@@ -131,12 +131,20 @@ func ConfigurarRotas(caminhoWeb string) http.Handler {
 	mux.HandleFunc("/api/v1/integracoes/kommo/webhook", HandlerWebhookReversoKommo)
 	mux.HandleFunc("/api/v1/integracoes/rdstation/webhook", HandlerWebhookReversoRDStation)
 
-	// 9. Servidor de Arquivos Estáticos do Painel de Controle (Usa embed.FS no binário blindado ou disco local em dev)
+	// 9. Servidor de Arquivos Estáticos e SPA Fallback do Painel de Controle
 	var fs http.Handler
+	var lerIndexHTML func() ([]byte, error)
+
 	if info, err := os.Stat(filepath.Join(caminhoWeb, "index.html")); err == nil && !info.IsDir() {
 		fs = http.FileServer(http.Dir(caminhoWeb))
+		lerIndexHTML = func() ([]byte, error) {
+			return os.ReadFile(filepath.Join(caminhoWeb, "index.html"))
+		}
 	} else {
 		fs = http.FileServer(http.FS(web.ArquivosEmbutidos))
+		lerIndexHTML = func() ([]byte, error) {
+			return web.ArquivosEmbutidos.ReadFile("index.html")
+		}
 	}
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -150,10 +158,25 @@ func ConfigurarRotas(caminhoWeb string) http.Handler {
 
 		if strings.HasSuffix(r.URL.Path, ".js") {
 			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+			fs.ServeHTTP(w, r)
+			return
 		} else if strings.HasSuffix(r.URL.Path, ".css") {
 			w.Header().Set("Content-Type", "text/css; charset=utf-8")
-		} else if strings.HasSuffix(r.URL.Path, ".html") || r.URL.Path == "/" {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			fs.ServeHTTP(w, r)
+			return
+		} else if strings.HasSuffix(r.URL.Path, ".ico") || strings.HasSuffix(r.URL.Path, ".png") || strings.HasSuffix(r.URL.Path, ".svg") || strings.HasSuffix(r.URL.Path, ".json") {
+			fs.ServeHTTP(w, r)
+			return
+		}
+
+		// Rota SPA (ex: /testador, /planos, /revendedores, /whitelabel, /logs, /docs ou /):
+		// Entrega sempre index.html com charset UTF-8 e status 200 para o router frontend renderizar
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		conteudo, err := lerIndexHTML()
+		if err == nil && len(conteudo) > 0 {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(conteudo)
+			return
 		}
 
 		fs.ServeHTTP(w, r)
