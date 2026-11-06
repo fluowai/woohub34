@@ -1,5 +1,25 @@
 # Diário de Bordo (Worklog) - WooHub API
 
+## [2026-11-05] Correção de Autenticação e Herança de Sessão no WooAPI Web (/chat)
+
+### Diagnóstico e Resolução
+- **Sintoma:** Ao tentar logar em `https://wooapi.wootech.com.br/chat`, o usuário recebia o erro `"Falha na autenticação"`, e a sessão ativa do painel principal não era herdada automaticamente.
+- **Causa Raiz:**
+  1. A API WooHub (`/api/v1/auth/login`, `/api/v1/auth/me`, `/api/v1/instancia/listar`, etc.) encapsula as respostas com sucesso no formato `{ "sucesso": true, "mensagem": "...", "dados": { "token": "...", "usuario": { ... } } }`.
+  2. O script do frontend (`web/chat.js`) verificava propriedades no nível raiz (`dados.token`, `dados.usuario`, `dados.instancias`), ocasionando falso negativo tanto na validação de sessão quanto no submit do login.
+  3. Faltavam estilos CSS específicos (`.modal-card-login`, `.login-header`, `.logo-chat-marca`, `.alerta-erro`) no `web/chat.css`, deixando a caixa de login sem container sólido e deslocada.
+  4. Tags de inclusão em `web/chat.html` usavam caminhos relativos (`chat.css` e `chat.js`), sendo corrigidas para referências absolutas (`/chat.css?v=20261105v2` e `/chat.js?v=20261105v2`).
+- **Ações Implementadas:**
+  - Criado o helper universal `extrairDados(resJson)` em `web/chat.js` para ler transparentemente do envelope `dados.dados` ou nível raiz.
+  - Habilitada herança transparente de sessão: se o usuário já estiver logado no painel geral (`woohub_token` no localStorage, sessionStorage ou via cookie HTTP), a sessão é validada imediatamente sem exibir modal.
+  - Atualizado `fazerLoginChat` para extrair o token do envelope correto, armazenar no localStorage e inicializar a aplicação.
+  - Atualizadas as rotinas `carregarInstancias`, `carregarListaConversas`, `abrirConversa` e `carregarRespostasRapidas` com suporte a `credentials: 'include'` e parsing robusto de arrays.
+  - Implementado design dark mode completo para `.modal-card-login` no `web/chat.css`.
+- **Validação:**
+  - `go test -v ./internal/api -run TestChat`: PASS (0.40s).
+  - `go build -o ./bin/woohub-api.exe ./cmd/woohub-api`: Compilação com exit code 0.
+
+
 ## [2026-11-05] Conexão 1-Clique Resend OAuth 2.1 e Sincronização Cloudflare Domain Connect
 
 ### Diagnóstico e Visão Geral

@@ -1,10 +1,10 @@
 /**
  * WOOAPI WEB - CLIENTE WHATSAPP WEB CLONE COM SUPER-PODERES
- * Version: 20261105v1
+ * Version: 20261105v2
  */
 
 const ESTADO = {
-  token: localStorage.getItem('woohub_token') || '',
+  token: localStorage.getItem('woohub_token') || sessionStorage.getItem('woohub_token') || localStorage.getItem('token') || '',
   usuario: null,
   recursosPlano: null,
   instancias: [],
@@ -21,6 +21,15 @@ const ESTADO = {
   tempoGravacaoInterval: null,
   segundosGravados: 0
 };
+
+// Helper universal para desempacotar payloads de respostas da API WooHub (envelope "dados")
+function extrairDados(resJson) {
+  if (!resJson) return {};
+  if (resJson.dados && typeof resJson.dados === 'object' && !Array.isArray(resJson.dados)) {
+    return { ...resJson, ...resJson.dados };
+  }
+  return resJson;
+}
 
 // ============================================================================
 // 1. INICIALIZAÇÃO DA APLICAÇÃO
@@ -40,16 +49,14 @@ async function iniciarApp() {
     localStorage.setItem('woohub_token', tokenURL);
   }
 
-  if (!ESTADO.token) {
-    exibirModalLogin();
-    return;
-  }
-
+  // Valida sessão (via token em memória/storage ou cookie woohub_token do painel)
   const autenticado = await validarSessaoUsuario();
   if (!autenticado) {
     exibirModalLogin();
     return;
   }
+
+  fecharModal('modal-login-chat');
 
   await carregarRecursosPlano();
   await carregarInstancias();
@@ -65,16 +72,18 @@ async function iniciarApp() {
 async function carregarMarcaWhiteLabel() {
   try {
     const res = await fetch('/api/v1/revenda/marca');
-    const dados = await res.json();
-    if (dados.sucesso && dados.marca) {
-      if (dados.marca.nome_plataforma) {
-        document.title = `${dados.marca.nome_plataforma} Web - WhatsApp`;
+    const json = await res.json();
+    const dados = extrairDados(json);
+    const marca = dados.marca || (dados.nome_plataforma ? dados : null);
+    if (json.sucesso && marca) {
+      if (marca.nome_plataforma) {
+        document.title = `${marca.nome_plataforma} Web - WhatsApp`;
         const elNome = document.getElementById('login-marca-nome');
-        if (elNome) elNome.innerText = dados.marca.nome_plataforma;
+        if (elNome) elNome.innerText = marca.nome_plataforma;
       }
-      if (dados.marca.logo_url) {
+      if (marca.logo_url) {
         const logoBox = document.getElementById('login-marca-logo');
-        if (logoBox) logoBox.innerHTML = `<img src="${dados.marca.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+        if (logoBox) logoBox.innerHTML = `<img src="${marca.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
       }
     }
   } catch (e) {
@@ -84,16 +93,27 @@ async function carregarMarcaWhiteLabel() {
 
 async function validarSessaoUsuario() {
   try {
+    const headers = {};
+    if (ESTADO.token) {
+      headers['Authorization'] = `Bearer ${ESTADO.token}`;
+    }
     const res = await fetch('/api/v1/auth/me', {
-      headers: { 'Authorization': `Bearer ${ESTADO.token}` }
+      headers: headers,
+      credentials: 'include'
     });
-    const dados = await res.json();
-    if (dados.sucesso && dados.usuario) {
-      ESTADO.usuario = dados.usuario;
+    const json = await res.json();
+    const dados = extrairDados(json);
+    const usuario = dados.usuario;
+    if (json.sucesso && usuario) {
+      ESTADO.usuario = usuario;
+      if (dados.token && !ESTADO.token) {
+        ESTADO.token = dados.token;
+        localStorage.setItem('woohub_token', dados.token);
+      }
       const elNome = document.getElementById('usuario-nome-display');
-      if (elNome) elNome.innerText = dados.usuario.nome || dados.usuario.email.split('@')[0];
+      if (elNome) elNome.innerText = usuario.nome || usuario.email.split('@')[0];
       const elAvatar = document.getElementById('minha-foto-avatar');
-      if (elAvatar) elAvatar.innerText = (dados.usuario.nome || dados.usuario.email)[0].toUpperCase();
+      if (elAvatar) elAvatar.innerText = (usuario.nome || usuario.email)[0].toUpperCase();
       return true;
     }
   } catch (e) {
@@ -107,19 +127,24 @@ async function validarSessaoUsuario() {
 // ============================================================================
 async function carregarRecursosPlano() {
   try {
+    const headers = {};
+    if (ESTADO.token) headers['Authorization'] = `Bearer ${ESTADO.token}`;
     const res = await fetch('/api/v1/chat/recursos', {
-      headers: { 'Authorization': `Bearer ${ESTADO.token}` }
+      headers: headers,
+      credentials: 'include'
     });
-    const dados = await res.json();
-    if (dados.sucesso && dados.recursos) {
-      ESTADO.recursosPlano = dados.recursos;
+    const json = await res.json();
+    const dados = extrairDados(json);
+    const recursos = dados.recursos || json.recursos;
+    if (json.sucesso && recursos) {
+      ESTADO.recursosPlano = recursos;
       
       const badge = document.getElementById('badge-plano-topo');
       if (badge) {
-        badge.innerText = dados.recursos.nome_plano.toUpperCase();
-        if (dados.recursos.plano_id === 'enterprise') {
+        badge.innerText = (recursos.nome_plano || 'STARTER').toUpperCase();
+        if (recursos.plano_id === 'enterprise') {
           badge.style.backgroundColor = '#8b5cf6';
-        } else if (dados.recursos.plano_id === 'profissional') {
+        } else if (recursos.plano_id === 'profissional') {
           badge.style.backgroundColor = '#059669';
         } else {
           badge.style.backgroundColor = '#3b82f6';
@@ -195,11 +220,13 @@ function abrirModalRecursosPlano() {
 async function carregarInstancias() {
   try {
     const res = await fetch('/api/v1/instancia/listar', {
-      headers: { 'Authorization': `Bearer ${ESTADO.token}` }
+      headers: { 'Authorization': `Bearer ${ESTADO.token}` },
+      credentials: 'include'
     });
     const dados = await res.json();
-    if (dados.sucesso && Array.isArray(dados.instancias)) {
-      ESTADO.instancias = dados.instancias;
+    const lista = Array.isArray(dados.dados) ? dados.dados : (Array.isArray(dados.instancias) ? dados.instancias : []);
+    if (dados.sucesso && Array.isArray(lista)) {
+      ESTADO.instancias = lista;
       const select = document.getElementById('select-instancia');
       if (!select) return;
 
@@ -325,11 +352,13 @@ async function carregarListaConversas(instanciaId) {
 
   try {
     const res = await fetch(`/api/v1/chat/conversas?instancia_id=${encodeURIComponent(instanciaId)}`, {
-      headers: { 'Authorization': `Bearer ${ESTADO.token}` }
+      headers: { 'Authorization': `Bearer ${ESTADO.token}` },
+      credentials: 'include'
     });
     const dados = await res.json();
-    if (dados.sucesso && Array.isArray(dados.conversas)) {
-      ESTADO.conversas = dados.conversas;
+    const conversas = Array.isArray(dados.conversas) ? dados.conversas : (Array.isArray(dados.dados) ? dados.dados : (dados.dados && Array.isArray(dados.dados.conversas) ? dados.dados.conversas : []));
+    if (dados.sucesso && Array.isArray(conversas)) {
+      ESTADO.conversas = conversas;
       renderizarListaConversas();
     }
   } catch (e) {
@@ -477,11 +506,13 @@ async function abrirConversa(chatJid, nomeContato) {
 
   try {
     const res = await fetch(`/api/v1/chat/mensagens?instancia_id=${encodeURIComponent(ESTADO.instanciaAtivaId)}&chat_jid=${encodeURIComponent(chatJid)}`, {
-      headers: { 'Authorization': `Bearer ${ESTADO.token}` }
+      headers: { 'Authorization': `Bearer ${ESTADO.token}` },
+      credentials: 'include'
     });
     const dados = await res.json();
-    if (dados.sucesso && Array.isArray(dados.mensagens)) {
-      ESTADO.mensagens = dados.mensagens;
+    const mensagens = Array.isArray(dados.mensagens) ? dados.mensagens : (Array.isArray(dados.dados) ? dados.dados : (dados.dados && Array.isArray(dados.dados.mensagens) ? dados.dados.mensagens : []));
+    if (dados.sucesso && Array.isArray(mensagens)) {
+      ESTADO.mensagens = mensagens;
       renderizarMensagens();
       rolarParaFimMensagens();
     }
@@ -830,11 +861,13 @@ async function enviarAudioPTT(base64Audio) {
 async function carregarRespostasRapidas() {
   try {
     const res = await fetch('/api/v1/chat/respostas-rapidas', {
-      headers: { 'Authorization': `Bearer ${ESTADO.token}` }
+      headers: { 'Authorization': `Bearer ${ESTADO.token}` },
+      credentials: 'include'
     });
     const dados = await res.json();
-    if (dados.sucesso && Array.isArray(dados.atalhos)) {
-      ESTADO.atalhos = dados.atalhos;
+    const atalhos = Array.isArray(dados.atalhos) ? dados.atalhos : (Array.isArray(dados.dados) ? dados.dados : (dados.dados && Array.isArray(dados.dados.atalhos) ? dados.dados.atalhos : []));
+    if (dados.sucesso && Array.isArray(atalhos)) {
+      ESTADO.atalhos = atalhos;
     }
   } catch (e) {
     console.error('Erro ao carregar respostas rápidas:', e);
@@ -1181,8 +1214,8 @@ function exibirModalLogin() {
 
 async function fazerLoginChat(e) {
   e.preventDefault();
-  const email = document.getElementById('chat-email').value;
-  const senha = document.getElementById('chat-senha').value;
+  const email = document.getElementById('chat-email').value.trim();
+  const senha = document.getElementById('chat-senha').value.trim();
   const btn = document.getElementById('btn-login-submit');
   const alerta = document.getElementById('login-erro');
 
@@ -1194,16 +1227,23 @@ async function fazerLoginChat(e) {
     const res = await fetch('/api/v1/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ email, senha })
     });
-    const dados = await res.json();
-    if (dados.sucesso && dados.token) {
-      ESTADO.token = dados.token;
-      localStorage.setItem('woohub_token', dados.token);
-      document.getElementById('modal-login-chat').style.display = 'none';
-      iniciarApp();
+    const json = await res.json();
+    const dados = extrairDados(json);
+    const token = dados.token || (json.dados && json.dados.token);
+    if (json.sucesso && token) {
+      ESTADO.token = token;
+      localStorage.setItem('woohub_token', token);
+      if (dados.usuario) {
+        ESTADO.usuario = dados.usuario;
+        localStorage.setItem('woohub_usuario', JSON.stringify(dados.usuario));
+      }
+      fecharModal('modal-login-chat');
+      await iniciarApp();
     } else {
-      alerta.innerText = dados.erro || 'Falha na autenticação';
+      alerta.innerText = json.erro || json.mensagem || dados.erro || 'Falha na autenticação';
       alerta.style.display = 'block';
     }
   } catch (err) {
