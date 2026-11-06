@@ -698,6 +698,18 @@ func (g *GerenciadorInstancias) tratarEventosConexao(evt interface{}, inst *Inst
 	case *events.Message:
 		g.tratarEventoMensagemCompleta(v, inst)
 
+	case *events.PushName:
+		if v.NewPushName != "" && !v.JID.IsEmpty() {
+			ehGrupo := v.JID.Server == types.GroupServer
+			_ = g.db.AtualizarDadosConversa(inst.ID, v.JID.String(), v.NewPushName, v.JID.User, "", ehGrupo)
+			if !v.JIDAlt.IsEmpty() {
+				_ = g.db.AtualizarDadosConversa(inst.ID, v.JIDAlt.String(), v.NewPushName, v.JIDAlt.User, "", ehGrupo)
+			}
+		}
+
+	case *events.HistorySync:
+		g.tratarEventoHistorySync(v, inst)
+
 	case *events.Receipt:
 		tipoStatus := "ENTREGUE"
 		if v.Type == events.ReceiptTypeRead {
@@ -734,3 +746,168 @@ func (g *GerenciadorInstancias) tratarEventosConexao(evt interface{}, inst *Inst
 		})
 	}
 }
+
+// tratarEventoHistorySync processa os pacotes historicos do WhatsApp Multidevice
+func (g *GerenciadorInstancias) tratarEventoHistorySync(v *events.HistorySync, inst *InstanciaAtiva) {
+	if v == nil || v.Data == nil || inst == nil {
+		return
+	}
+
+	// 1. Mapeamento de Pushnames recebidos no historico
+	for _, pn := range v.Data.GetPushnames() {
+		if pn.GetID() != "" && pn.GetPushname() != "" {
+			if jid, err := types.ParseJID(pn.GetID()); err == nil {
+				_ = g.db.AtualizarDadosConversa(inst.ID, jid.String(), pn.GetPushname(), jid.User, "", jid.Server == types.GroupServer)
+			}
+		}
+	}
+
+	// 2. Mapeamento de Phone Number para LID
+	for _, mapping := range v.Data.GetPhoneNumberToLidMappings() {
+		if mapping.GetPnJID() != "" && mapping.GetLidJID() != "" {
+			if lidJID, errLID := types.ParseJID(mapping.GetLidJID()); errLID == nil {
+				if pnJID, errPN := types.ParseJID(mapping.GetPnJID()); errPN == nil {
+					_ = g.db.AtualizarDadosConversa(inst.ID, lidJID.String(), pnJID.User, pnJID.User, "", false)
+				}
+			}
+		}
+	}
+
+	totalMsgProcessadas := 0
+
+	// 3. Processa conversas e mensagens historicas
+	for _, conv := range v.Data.GetConversations() {
+		chatJIDStr := conv.GetID()
+		if chatJIDStr == "" {
+			continue
+		}
+		chatJID, errJID := types.ParseJID(chatJIDStr)
+		if errJID != nil {
+			continue
+		}
+
+		nome := conv.GetDisplayName()
+		if nome == "" {
+			nome = conv.GetName()
+		}
+		numero := chatJID.User
+		if conv.GetPnJID() != "" {
+			if pn, errPN := types.ParseJID(conv.GetPnJID()); errPN == nil {
+				numero = pn.User
+			}
+		}
+
+		ehGrupo := chatJID.Server == types.GroupServer
+		if nome != "" || numero != "" {
+			_ = g.db.AtualizarDadosConversa(inst.ID, chatJID.String(), nome, numero, "", ehGrupo)
+		}
+
+		// Processa mensagens historicas contidas nesta conversa
+		if inst.Cliente != nil {
+			for _, hMsg := range conv.GetMessages() {
+				if hMsg.GetMessage() == nil {
+					continue
+				}
+				msgEvt, errParse := inst.Cliente.ParseWebMessage(chatJID, hMsg.GetMessage())
+				if errParse == nil && msgEvt != nil {
+					g.ProcessarMensagemChatHistorica(inst, msgEvt)
+					totalMsgProcessadas++
+				}
+			}
+		}
+	}
+
+	// Notifica via SSE para atualizar a lista lateral e o chat aberto
+	HubChatGlobal.Transmitir(EventoChatWeb{
+		Tipo:        "sync_concluido",
+		InstanciaID: inst.ID,
+		Dados: map[string]interface{}{
+			"total_conversas": len(v.Data.GetConversations()),
+			"total_mensagens": totalMsgProcessadas,
+		},
+	})
+}
+
+// ProcessarMensagemChatHistorica grava uma mensagem do historico diretamente nas tabelas do Web Chat
+func (g *GerenciadorInstancias) ProcessarMensagemChatHistorica(inst *InstanciaAtiva, v *events.Message) {
+	if v == nil || v.Info.ID == "" || v.Message == nil || inst == nil {
+		return
+	}
+
+	tipoMensagem := "texto"
+	texto := ""
+	mimeType := ""
+	nomeArquivo := ""
+
+	switch {
+	case v.Message.GetConversation() != "":
+		texto = v.Message.GetConversation()
+		tipoMensagem = "texto"
+	case v.Message.GetExtendedTextMessage() != nil:
+		texto = v.Message.GetExtendedTextMessage().GetText()
+		tipoMensagem = "texto"
+	case v.Message.GetImageMessage() != nil:
+		img := v.Message.GetImageMessage()
+		texto = img.GetCaption()
+		mimeType = img.GetMimetype()
+		tipoMensagem = "imagem"
+	case v.Message.GetAudioMessage() != nil:
+		aud := v.Message.GetAudioMessage()
+		mimeType = aud.GetMimetype()
+		if aud.GetPTT() {
+			tipoMensagem = "audio_ptt"
+		} else {
+			tipoMensagem = "audio"
+		}
+	case v.Message.GetVideoMessage() != nil:
+		vid := v.Message.GetVideoMessage()
+		texto = vid.GetCaption()
+		mimeType = vid.GetMimetype()
+		tipoMensagem = "video"
+	case v.Message.GetDocumentMessage() != nil:
+		doc := v.Message.GetDocumentMessage()
+		texto = doc.GetCaption()
+		nomeArquivo = doc.GetFileName()
+		mimeType = doc.GetMimetype()
+		tipoMensagem = "documento"
+	case v.Message.GetStickerMessage() != nil:
+		stk := v.Message.GetStickerMessage()
+		mimeType = stk.GetMimetype()
+		tipoMensagem = "sticker"
+	case v.Message.GetLocationMessage() != nil:
+		loc := v.Message.GetLocationMessage()
+		texto = fmt.Sprintf("Localizacao: %s", loc.GetName())
+		tipoMensagem = "localizacao"
+	case v.Message.GetContactMessage() != nil:
+		texto = v.Message.GetContactMessage().GetDisplayName()
+		tipoMensagem = "contato"
+	}
+
+	status := "RECEBIDA"
+	if v.Info.IsFromMe {
+		status = "ENVIADA"
+	}
+
+	remetenteNome := v.Info.PushName
+	remetenteNumero := v.Info.Sender.User
+
+	msgChat := database.MensagemChat{
+		ID:              v.Info.ID,
+		InstanciaID:     inst.ID,
+		ChatJID:         v.Info.Chat.String(),
+		RemetenteJID:    v.Info.Sender.String(),
+		RemetenteNome:   remetenteNome,
+		RemetenteNumero: remetenteNumero,
+		DeMim:           v.Info.IsFromMe,
+		Tipo:            tipoMensagem,
+		Texto:           texto,
+		MimeType:        mimeType,
+		NomeArquivo:     nomeArquivo,
+		Status:          status,
+		CriadoEm:        v.Info.Timestamp,
+	}
+
+	ehGrupo := v.Info.IsGroup || v.Info.Chat.Server == types.GroupServer
+	_ = g.db.SalvarMensagemChatComContato(msgChat, remetenteNome, remetenteNumero, "", ehGrupo)
+}
+

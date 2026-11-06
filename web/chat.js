@@ -372,6 +372,8 @@ function tratarEventoRealtime(evt) {
     atualizarStatusTicksMensagem(evt.dados.ids_mensagens, evt.dados.status);
   } else if (evt.tipo === 'mensagem_deletada' && evt.dados) {
     marcarMensagemDeletadaNaTela(evt.dados.id_mensagem);
+  } else if (evt.tipo === 'sync_concluido') {
+    carregarListaConversas(ESTADO.instanciaAtivaId);
   } else if (evt.tipo === 'presenca' && evt.dados) {
     if (ESTADO.chatAtivoJid === evt.dados.chat_jid) {
       const statusEl = document.getElementById('chat-ativo-status');
@@ -449,7 +451,7 @@ function renderizarListaConversas() {
     container.innerHTML = `
       <div class="estado-vazio-conversas">
         <p>Nenhuma conversa encontrada.</p>
-        <button class="btn-chat-primario" onclick="sincronizarWhatsAppData()" style="margin-top: 10px; font-size: 0.85rem; padding: 8px 12px;">🔄 Sincronizar Conversas</button>
+        <button class="btn-chat-primario" onclick="sincronizarWhatsAppData()" style="margin-top: 10px; font-size: 0.85rem; padding: 8px 14px;">🔄 Sincronizar Histórico do WhatsApp</button>
       </div>
     `;
     return;
@@ -1378,4 +1380,21 @@ async function fazerLoginChat(e) {
     btn.disabled = false;
   }
 }
+
+// ============================================================================
+// 12. MENU DROP-DOWN DE CABEÇALHO (ESTILO WHATSAPP WEB)
+// ============================================================================
+function toggleMenuHeader(event) {
+  if (event) event.stopPropagation();
+  const menu = document.getElementById('menu-flutuante-header');
+  if (!menu) return;
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('menu-flutuante-header');
+  if (menu && menu.style.display !== 'none' && !e.target.closest('.dropdown-menu-wrapper')) {
+    menu.style.display = 'none';
+  }
+});
 

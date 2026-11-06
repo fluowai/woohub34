@@ -313,15 +313,53 @@ func (g *GerenciadorDB) MarcarMensagemDeletada(instanciaID, msgID string) error 
 	return err
 }
 
+// parseDataFlexivel converte qualquer retorno de data do SQLite ou PostgreSQL para time.Time com segurança
+func parseDataFlexivel(val interface{}) time.Time {
+	if val == nil {
+		return time.Now()
+	}
+	switch v := val.(type) {
+	case time.Time:
+		return v
+	case *time.Time:
+		if v != nil {
+			return *v
+		}
+		return time.Now()
+	case string:
+		v = strings.TrimSpace(v)
+		if v == "" {
+			return time.Now()
+		}
+		for _, layout := range []string{
+			time.RFC3339Nano,
+			time.RFC3339,
+			"2006-01-02 15:04:05.999999999-07:00",
+			"2006-01-02 15:04:05-07:00",
+			"2006-01-02 15:04:05.999999999",
+			"2006-01-02 15:04:05",
+			"2006-01-02T15:04:05",
+			"2006-01-02",
+		} {
+			if t, err := time.Parse(layout, v); err == nil {
+				return t
+			}
+		}
+	case []byte:
+		return parseDataFlexivel(string(v))
+	}
+	return time.Now()
+}
+
 // ListarConversasChat retorna a lista de contatos/conversas recentes
 func (g *GerenciadorDB) ListarConversasChat(instanciaID string, limite int) ([]ConversaChat, error) {
-	if limite <= 0 || limite > 300 {
-		limite = 100
+	if limite <= 0 || limite > 500 {
+		limite = 150
 	}
 	rows, err := g.query(`
 		SELECT id, instancia_id, chat_jid, COALESCE(nome_contato, ''), COALESCE(numero_telefone, ''), COALESCE(foto_url, ''),
-		       COALESCE(ultima_mensagem, ''), ultimo_timestamp, COALESCE(tipo_ultima_msg, 'texto'),
-		       nao_lidas, eh_grupo, arquivado, fixado, atualizado_em
+		       COALESCE(ultima_mensagem, ''), COALESCE(ultimo_timestamp, CURRENT_TIMESTAMP), COALESCE(tipo_ultima_msg, 'texto'),
+		       COALESCE(nao_lidas, 0), COALESCE(eh_grupo, 0), COALESCE(arquivado, 0), COALESCE(fixado, 0), COALESCE(atualizado_em, CURRENT_TIMESTAMP)
 		FROM chat_conversas
 		WHERE instancia_id = ?
 		ORDER BY fixado DESC, atualizado_em DESC
@@ -336,11 +374,14 @@ func (g *GerenciadorDB) ListarConversasChat(instanciaID string, limite int) ([]C
 	for rows.Next() {
 		var c ConversaChat
 		var ehGrupoInt, arqInt, fixInt int
+		var rawUltimoTimestamp, rawAtualizadoEm interface{}
 		if err := rows.Scan(
 			&c.ID, &c.InstanciaID, &c.ChatJID, &c.NomeContato, &c.NumeroTelefone, &c.FotoURL,
-			&c.UltimaMensagem, &c.UltimoTimestamp, &c.TipoUltimaMsg,
-			&c.NaoLidas, &ehGrupoInt, &arqInt, &fixInt, &c.AtualizadoEm,
+			&c.UltimaMensagem, &rawUltimoTimestamp, &c.TipoUltimaMsg,
+			&c.NaoLidas, &ehGrupoInt, &arqInt, &fixInt, &rawAtualizadoEm,
 		); err == nil {
+			c.UltimoTimestamp = parseDataFlexivel(rawUltimoTimestamp)
+			c.AtualizadoEm = parseDataFlexivel(rawAtualizadoEm)
 			c.EhGrupo = ehGrupoInt == 1
 			c.Arquivado = arqInt == 1
 			c.Fixado = fixInt == 1
@@ -354,20 +395,23 @@ func (g *GerenciadorDB) ListarConversasChat(instanciaID string, limite int) ([]C
 func (g *GerenciadorDB) ObterOuCriarConversaChat(instanciaID, chatJID, nomeContato, numeroTelefone, fotoURL string, ehGrupo bool) (*ConversaChat, error) {
 	row := g.queryRow(`
 		SELECT id, instancia_id, chat_jid, COALESCE(nome_contato, ''), COALESCE(numero_telefone, ''), COALESCE(foto_url, ''),
-		       COALESCE(ultima_mensagem, ''), ultimo_timestamp, COALESCE(tipo_ultima_msg, 'texto'),
-		       nao_lidas, eh_grupo, arquivado, fixado, atualizado_em
+		       COALESCE(ultima_mensagem, ''), COALESCE(ultimo_timestamp, CURRENT_TIMESTAMP), COALESCE(tipo_ultima_msg, 'texto'),
+		       COALESCE(nao_lidas, 0), COALESCE(eh_grupo, 0), COALESCE(arquivado, 0), COALESCE(fixado, 0), COALESCE(atualizado_em, CURRENT_TIMESTAMP)
 		FROM chat_conversas
 		WHERE instancia_id = ? AND chat_jid = ?
 	`, instanciaID, chatJID)
 
 	var c ConversaChat
 	var ehGrupoInt, arqInt, fixInt int
+	var rawUltimoTimestamp, rawAtualizadoEm interface{}
 	err := row.Scan(
 		&c.ID, &c.InstanciaID, &c.ChatJID, &c.NomeContato, &c.NumeroTelefone, &c.FotoURL,
-		&c.UltimaMensagem, &c.UltimoTimestamp, &c.TipoUltimaMsg,
-		&c.NaoLidas, &ehGrupoInt, &arqInt, &fixInt, &c.AtualizadoEm,
+		&c.UltimaMensagem, &rawUltimoTimestamp, &c.TipoUltimaMsg,
+		&c.NaoLidas, &ehGrupoInt, &arqInt, &fixInt, &rawAtualizadoEm,
 	)
 	if err == nil {
+		c.UltimoTimestamp = parseDataFlexivel(rawUltimoTimestamp)
+		c.AtualizadoEm = parseDataFlexivel(rawAtualizadoEm)
 		c.EhGrupo = ehGrupoInt == 1
 		c.Arquivado = arqInt == 1
 		c.Fixado = fixInt == 1
@@ -429,13 +473,13 @@ func (g *GerenciadorDB) ObterOuCriarConversaChat(instanciaID, chatJID, nomeConta
 // ListarMensagensChat retorna as mensagens de uma conversa
 func (g *GerenciadorDB) ListarMensagensChat(instanciaID, chatJID string, limite int) ([]MensagemChat, error) {
 	if limite <= 0 || limite > 500 {
-		limite = 100
+		limite = 150
 	}
 	rows, err := g.query(`
 		SELECT id, instancia_id, chat_jid, remetente_jid, COALESCE(remetente_nome, ''), COALESCE(remetente_numero, ''),
-		       de_mim, tipo, COALESCE(texto, ''), COALESCE(midia_url, ''), COALESCE(mimetype, ''),
-		       COALESCE(nome_arquivo, ''), status, deletada_remetente,
-		       COALESCE(resposta_de_id, ''), criado_em
+		       COALESCE(de_mim, 0), tipo, COALESCE(texto, ''), COALESCE(midia_url, ''), COALESCE(mimetype, ''),
+		       COALESCE(nome_arquivo, ''), COALESCE(status, 'PENDENTE'), COALESCE(deletada_remetente, 0),
+		       COALESCE(resposta_de_id, ''), COALESCE(criado_em, CURRENT_TIMESTAMP)
 		FROM chat_mensagens
 		WHERE instancia_id = ? AND chat_jid = ?
 		ORDER BY criado_em ASC
@@ -450,11 +494,13 @@ func (g *GerenciadorDB) ListarMensagensChat(instanciaID, chatJID string, limite 
 	for rows.Next() {
 		var m MensagemChat
 		var deMimInt, delInt int
+		var rawCriadoEm interface{}
 		if err := rows.Scan(
 			&m.ID, &m.InstanciaID, &m.ChatJID, &m.RemetenteJID, &m.RemetenteNome, &m.RemetenteNumero,
 			&deMimInt, &m.Tipo, &m.Texto, &m.MidiaURL, &m.MimeType,
-			&m.NomeArquivo, &m.Status, &delInt, &m.RespostaDeID, &m.CriadoEm,
+			&m.NomeArquivo, &m.Status, &delInt, &m.RespostaDeID, &rawCriadoEm,
 		); err == nil {
+			m.CriadoEm = parseDataFlexivel(rawCriadoEm)
 			m.DeMim = deMimInt == 1
 			m.DeletadaRemetente = delInt == 1
 			lista = append(lista, m)
@@ -523,4 +569,53 @@ func (g *GerenciadorDB) SalvarRespostaRapida(r RespostaRapidaChat) error {
 func (g *GerenciadorDB) ExcluirRespostaRapida(clienteID, id string) error {
 	_, err := g.exec(`DELETE FROM chat_respostas_rapidas WHERE cliente_id = ? AND id = ?`, clienteID, id)
 	return err
+}
+
+// ItemLogDestinatario representa um contato extraído do histórico de disparos
+type ItemLogDestinatario struct {
+	Destinatario string
+	Tipo         string
+	CriadoEm     time.Time
+}
+
+// ObterDestinatariosRecentesLogs busca destinatários únicos com interações recentes para popular conversas
+func (g *GerenciadorDB) ObterDestinatariosRecentesLogs(instanciaID string, limite int) ([]ItemLogDestinatario, error) {
+	if limite <= 0 || limite > 300 {
+		limite = 100
+	}
+	rows, err := g.query(`
+		SELECT destinatario, tipo, COALESCE(criado_em, CURRENT_TIMESTAMP)
+		FROM logs_mensagens
+		WHERE instancia_id = ? AND destinatario != ''
+		ORDER BY criado_em DESC
+		LIMIT ?
+	`, instanciaID, limite*3)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	vistos := make(map[string]bool)
+	var resultado []ItemLogDestinatario
+
+	for rows.Next() {
+		var dest, tipo string
+		var rawCriado interface{}
+		if err := rows.Scan(&dest, &tipo, &rawCriado); err == nil {
+			dest = strings.TrimSpace(dest)
+			if dest == "" || vistos[dest] {
+				continue
+			}
+			vistos[dest] = true
+			resultado = append(resultado, ItemLogDestinatario{
+				Destinatario: dest,
+				Tipo:         tipo,
+				CriadoEm:     parseDataFlexivel(rawCriado),
+			})
+			if len(resultado) >= limite {
+				break
+			}
+		}
+	}
+	return resultado, nil
 }

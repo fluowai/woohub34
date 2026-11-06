@@ -76,11 +76,15 @@ body {
   border-bottom: 1px solid var(--wa-borda);
 }
 
-.usuario-perfil {
+.usuario-perfil-wa {
   display: flex;
   align-items: center;
-  gap: 10px;
   cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.usuario-perfil-wa:hover {
+  opacity: 0.85;
 }
 
 .avatar-circulo {
@@ -104,15 +108,41 @@ body {
   object-fit: cover;
 }
 
-.usuario-meta {
-  display: flex;
-  flex-direction: column;
+/* Menu Dropdown Três Pontinhos Estilo WhatsApp Web */
+.menu-flutuante-wa {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  background-color: #233138;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  padding: 8px 0;
+  min-width: 230px;
+  z-index: 999;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.usuario-nome-display {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--wa-texto-primario);
+.menu-item-wa {
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #d1d7db;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.menu-item-wa:hover {
+  background-color: #182229;
+  color: #e9edef;
+}
+
+.menu-divisor-wa {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.08);
+  margin: 6px 0;
 }
 
 .plano-badge-pill {
@@ -125,31 +155,30 @@ body {
   cursor: pointer;
   width: fit-content;
   letter-spacing: 0.5px;
-  margin-top: 2px;
 }
 
-/* Card Conexão WhatsApp Ativa (Destaque Nome da Instância e Número Real) */
+/* Card Conexão WhatsApp Ativa (Linha Única sem esmagamento) */
 .card-instancia-conexao {
-  background-color: #182229;
+  background-color: #111b21;
   border-bottom: 1px solid var(--wa-borda);
-  padding: 10px 16px;
+  padding: 8px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .instancia-conexao-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
   flex: 1;
 }
 
 .status-bolinha-pulsante {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background-color: #00a884;
   box-shadow: 0 0 8px #00a884;
@@ -158,9 +187,20 @@ body {
 }
 
 @keyframes pulsoVerde {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 168, 132, 0.7); }
-  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(0, 168, 132, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 168, 132, 0); }
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(0, 168, 132, 0.7);
+  }
+
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 6px rgba(0, 168, 132, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(0, 168, 132, 0);
+  }
 }
 
 .status-bolinha-pulsante.desconectado {
@@ -171,23 +211,33 @@ body {
 
 .instancia-texto-box {
   display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.instancia-linha-titulo {
-  display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 
 .instancia-nome-label {
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--wa-texto-primario);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 110px;
+}
+
+.instancia-separador {
+  color: #8696a0;
+  font-size: 0.75rem;
+}
+
+.instancia-numero-real {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #53bdeb;
+  font-family: 'Segoe UI', monospace;
+  white-space: nowrap;
 }
 
 .instancia-status-tag {
@@ -197,15 +247,7 @@ body {
   padding: 1px 6px;
   border-radius: 6px;
   font-weight: 600;
-}
-
-.instancia-numero-real {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #53bdeb;
-  font-family: 'Segoe UI', monospace;
-  letter-spacing: 0.5px;
-  margin-top: 1px;
+  white-space: nowrap;
 }
 
 .instancia-seletor-wrapper {
@@ -1056,8 +1098,15 @@ body {
 }
 
 @keyframes modalFadeIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .login-header {

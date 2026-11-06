@@ -230,6 +230,37 @@ func (g *GerenciadorInstancias) enviarComFallbackBrasil(ctx context.Context, ins
 	}
 
 	_ = g.db.GravarLogMensagem(inst.ID, resp.ID, tipoLog, jid.String(), "ENVIADA", "ENTREGUE", "")
+
+	// Salva mensagem enviada e atualiza a conversa no Web Chat
+	textoEnviado := ""
+	if msg.GetConversation() != "" {
+		textoEnviado = msg.GetConversation()
+	} else if msg.GetExtendedTextMessage() != nil {
+		textoEnviado = msg.GetExtendedTextMessage().GetText()
+	} else {
+		textoEnviado = "[" + tipoLog + "]"
+	}
+	resolvido := g.ResolverInfoContato(ctx, inst.ID, jid, "")
+	msgChatWeb := database.MensagemChat{
+		ID:              resp.ID,
+		InstanciaID:     inst.ID,
+		ChatJID:         jid.String(),
+		RemetenteJID:    "eu",
+		RemetenteNome:   "Eu",
+		RemetenteNumero: inst.NumeroConectado,
+		DeMim:           true,
+		Tipo:            tipoLog,
+		Texto:           textoEnviado,
+		Status:          "ENVIADA",
+		CriadoEm:        time.Now(),
+	}
+	_ = g.db.SalvarMensagemChatComContato(msgChatWeb, resolvido.Nome, resolvido.Numero, resolvido.FotoURL, resolvido.EhGrupo)
+	HubChatGlobal.Transmitir(EventoChatWeb{
+		Tipo:        "nova_mensagem",
+		InstanciaID: inst.ID,
+		Mensagem:    &msgChatWeb,
+	})
+
 	return resp.ID, nil
 }
 

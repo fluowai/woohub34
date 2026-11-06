@@ -1,6 +1,44 @@
 # Diário de Bordo (Worklog) - WooHub API
 
-## [2026-11-06] Enriquecimento de Dados, Resolução de LIDs, Importação de Mensagens e Novo Layout do WhatsApp Web
+## [2026-11-06] Sincronização Completa de Histórico WhatsApp Multidevice (HistorySync) e Cabeçalho Oficial Pixel-Perfect
+
+### Diagnóstico e Solicitação do Maestro
+- **Problema 1 (Cabeçalho da Sidebar Apertado):** O topo da barra lateral estava com a altura de 60px espremida pelo nome do usuário e pelo badge roxo horizontal de 26 caracteres (`ENTERPRISE / WHITE-LABEL`), tornando o cabeçalho sobrecarregado visualmente e desalinhado em relação ao WhatsApp Web oficial.
+- **Problema 2 (Conversas Não Sincronizavam):** O botão "Sincronizar Conversas" retornava lista vazia ("Nenhuma conversa encontrada"). O usuário apontou como referência o repositório `mrifqidaffaaditya/WA-AKG` (Node.js/Baileys), que consome os payloads de histórico do WhatsApp.
+- **Causas Raízes Identificadas:**
+  1. No Whatsmeow, o WhatsApp envia as conversas, mensagens e contatos multidevice através do evento `*events.HistorySync`. Esse evento NÃO estava registrado no event handler de conexões (`tratarEventosConexao` em `instance_manager.go`), sendo descartado silenciosamente.
+  2. Mensagens enviadas pela API ou pelo Web Chat (`enviarComFallbackBrasil`) eram gravadas apenas na tabela `logs_mensagens`, nunca em `chat_mensagens` nem em `chat_conversas`, fazendo com que mensagens como "Oi Bom dia" não gerassem nem atualizassem a conversa na lista lateral.
+  3. No PostgreSQL/SQLite, o scan de colunas de timestamp sem proteção contra valores nulos descartava conversas silenciosamente.
+
+### Implementações Realizadas
+1. **Tratamento de Histórico Multidevice (`internal/core/instance_manager.go`):**
+   - Registrado tratamento do evento `*events.HistorySync` e `*events.PushName`.
+   - Implementado `tratarEventoHistorySync`:
+     - Itera sobre `v.Data.GetPushnames()` mapeando nomes de contatos para seus respectivos JIDs.
+     - Itera sobre `v.Data.GetPhoneNumberToLidMappings()` mapeando LIDs para números reais de telefone.
+     - Itera sobre `v.Data.GetConversations()` salvando nome, número real, unread count e mensagens históricas via `inst.Cliente.ParseWebMessage`.
+   - Implementado `ProcessarMensagemChatHistorica` para persistir rapidamente as mensagens do histórico em `chat_mensagens` e `chat_conversas`.
+2. **Persistência de Envios no Web Chat (`internal/core/funcionalidades_avancadas.go`):**
+   - Atualizado `enviarComFallbackBrasil` para, após o envio com sucesso pelo WhatsApp (`resp.ID`), salvar a mensagem enviada em `chat_mensagens` (`DeMim: true`, status `ENVIADA`), atualizar `chat_conversas` e transmitir via SSE (`nova_mensagem`) em tempo real.
+3. **Sincronização Ampla de Conversas (`internal/core/chat_resolver.go` e `internal/database/db_chat.go`):**
+   - Implementado `ObterDestinatariosRecentesLogs` em `db_chat.go` para importar conversas a partir dos logs de disparos da instância (recuperando o histórico das milhares de mensagens existentes).
+   - Atualizado `SincronizarContatosEGrupos` para mesclar grupos do WhatsApp, contatos salvos no SQLite do Whatsmeow e conversas recentes de logs de mensagens.
+   - Adicionado scanner de data flexível `parseDataFlexivel` e `COALESCE` em todas as colunas de `ListarConversasChat` e `ListarMensagensChat`, prevenindo falhas de scan entre PostgreSQL e SQLite.
+4. **Cabeçalho Pixel-Perfect do WhatsApp Web (`web/chat.html` e `web/chat.css`):**
+   - Header da Sidebar (`.sidebar-header`) agora segue rigorosamente a anatomia do WhatsApp Web:
+     - **Esquerda:** Apenas o avatar circular (40x40px) com hover e clique para Perfil / Recursos.
+     - **Direita:** Ícones padrão (Nova Conversa, Sincronizar, Super-Poderes) e menu flutuante estilo WhatsApp Web (três pontinhos `⋮`).
+   - Criado menu dropdown nativo escuro com opções: *⭐ Recursos do Plano*, *💬 Nova Conversa*, *🔄 Sincronizar Histórico*, *⚡ Respostas Rápidas* e *📊 Painel Geral*.
+   - **Card de Conexão WhatsApp Ativa:** Reformulado para linha única elegante e espaçosa (`Homologação • 554888003260 Conectado`), com dropdown seletor à direita.
+   - Atualizado botão do estado vazio da lista lateral para "🔄 Sincronizar Histórico do WhatsApp".
+
+### Verificação
+- `go test -v ./internal/core`: PASS.
+- `go test -v ./internal/api -run TestChat`: PASS (0.15s).
+- `go test -v ./internal/database`: PASS.
+- `go build -o ./bin/woohub-api.exe ./cmd/woohub-api`: SUCESSO (30.8 MB).
+
+
 
 ### Diagnóstico e Solicitação do Maestro
 - **Problema Relatado:** Na listagem de chats apareciam JIDs crus como `266464133132334@lid` e `120363425163494203@newsletter` sem nome, sem foto e sem número. O layout do topo da sidebar estava espremido pelo badge roxo, e o número real da conexão conectada não aparecia com destaque igual ao card do painel (`554888003260`).

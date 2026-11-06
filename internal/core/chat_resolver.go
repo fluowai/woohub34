@@ -113,7 +113,7 @@ func (g *GerenciadorInstancias) ResolverInfoContato(ctx context.Context, instanc
 	return info
 }
 
-// SincronizarContatosEGrupos importa grupos e contatos salvos no WhatsApp para a lista do Web Chat
+// SincronizarContatosEGrupos importa grupos, contatos e histórico de conversas para a lista do Web Chat
 func (g *GerenciadorInstancias) SincronizarContatosEGrupos(ctx context.Context, instanciaID string) (int, error) {
 	inst, err := g.ObterInstanciaAtiva(instanciaID)
 	if err != nil || inst == nil || inst.Cliente == nil {
@@ -122,7 +122,7 @@ func (g *GerenciadorInstancias) SincronizarContatosEGrupos(ctx context.Context, 
 
 	total := 0
 
-	// 1. Sincronizar Grupos
+	// 1. Sincronizar Grupos do WhatsApp
 	if grupos, errGrupos := inst.Cliente.GetJoinedGroups(ctx); errGrupos == nil && len(grupos) > 0 {
 		for _, grp := range grupos {
 			nome := grp.Name
@@ -138,7 +138,7 @@ func (g *GerenciadorInstancias) SincronizarContatosEGrupos(ctx context.Context, 
 		}
 	}
 
-	// 2. Sincronizar Contatos da Agenda / Histórico
+	// 2. Sincronizar Contatos salvos na agenda do WhatsApp
 	if inst.Cliente.Store != nil && inst.Cliente.Store.Contacts != nil {
 		if contatos, errCont := inst.Cliente.Store.Contacts.GetAllContacts(ctx); errCont == nil {
 			for jid, info := range contatos {
@@ -170,7 +170,26 @@ func (g *GerenciadorInstancias) SincronizarContatosEGrupos(ctx context.Context, 
 		}
 	}
 
-	// 3. Atualizar conversas já existentes que estejam com JID bruto
+	// 3. Importar conversas e destinatários recentes dos logs de mensagens (garante histórico das instâncias em produção)
+	if logsRecentes, errLogs := g.db.ObterDestinatariosRecentesLogs(instanciaID, 150); errLogs == nil && len(logsRecentes) > 0 {
+		for _, item := range logsRecentes {
+			jidPadrao, errJID := ObterJIDPadrao(item.Destinatario)
+			if errJID == nil {
+				resolvido := g.ResolverInfoContato(ctx, instanciaID, jidPadrao, "")
+				nome := resolvido.Nome
+				if nome == "" || nome == jidPadrao.String() {
+					nome = resolvido.Numero
+				}
+				if nome == "" {
+					nome = item.Destinatario
+				}
+				_ = g.db.AtualizarDadosConversa(instanciaID, jidPadrao.String(), nome, resolvido.Numero, resolvido.FotoURL, resolvido.EhGrupo)
+				total++
+			}
+		}
+	}
+
+	// 4. Atualizar conversas já existentes no chat_conversas que estejam com JID bruto
 	if convs, errConvs := g.db.ListarConversasChat(instanciaID, 300); errConvs == nil {
 		for _, c := range convs {
 			if strings.Contains(c.NomeContato, "@lid") || strings.Contains(c.NomeContato, "@newsletter") || c.NomeContato == c.ChatJID || c.NumeroTelefone == "" {
